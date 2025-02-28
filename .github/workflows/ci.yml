@@ -109,6 +109,7 @@ jobs:
       upload-tests: false
 
   wait-for-containers:
+    name: Wait for Docker containers
     needs: setup
     if: needs.setup.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
@@ -149,7 +150,7 @@ jobs:
         }
 
   test:
-    needs: [setup, build-testassets]
+    needs: [setup, build-testassets, wait-for-containers]
     if: needs.setup.outputs.should_skip != 'true'
     strategy:
       fail-fast: false
