@@ -14,7 +14,7 @@ foreach (var dockerfile in Directory.EnumerateFiles("./build/containers", "*.doc
 {
     var name = Path.GetFileNameWithoutExtension(dockerfile);
     using var fs = File.OpenRead(dockerfile);
-    var hash = Convert.ToBase64String(await hasher.ComputeHashAsync(fs));
+    var hash = Convert.ToHexString(await hasher.ComputeHashAsync(fs));
     containers.Add(name, $"{name}-{hash}");
 }
 
