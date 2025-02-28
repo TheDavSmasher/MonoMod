@@ -73,7 +73,7 @@ jobs:
     - name: Compute test matrix
       if: steps.skip_check.outputs.should_skip != 'true'
       id: compute-matrix
-      run: dotnet run --project ./build/gen-test-matrix/gen-test-matrix.csproj -- $env:GITHUB_OUTPUT matrix
+      run: dotnet run --project ./build/gen-test-matrix/gen-test-matrix.csproj -c Release -- "${{ github.repository_owner }}" $env:GITHUB_OUTPUT matrix
   
   build-testassets:
     needs: setup

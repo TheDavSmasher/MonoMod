@@ -6,7 +6,9 @@ internal sealed record OS : Enableable
 {
     public required string Name { get; init; }
     public required string Runner { get; init; }
-    public string? Container { get; init; } // should properly be UseContainer, then we gen container name from rid + dockerfile hash
+
+    [JsonIgnore]
+    public bool UseContainer { get; init; }
 
     [JsonIgnore]
     public bool HasFramework { get; init; }
@@ -46,6 +48,7 @@ internal sealed record OS : Enableable
         {
             Name = "Linux",
             Runner = "ubuntu-latest",
+            UseContainer = true,
             HasSystemMono = true,
             RidName = "linux",
             UnityDllName = "monobdwgc-2.0", // TODO: is this correct?
