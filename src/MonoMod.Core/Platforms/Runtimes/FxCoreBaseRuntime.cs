@@ -29,7 +29,6 @@ namespace MonoMod.Core.Platforms.Runtimes
 
         private static TypeClassification ClassifyRyuJitX86(Type type, bool isReturn)
         {
-
             while (!type.IsPrimitive || type.IsEnum)
             {
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
