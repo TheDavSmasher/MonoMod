@@ -60,6 +60,12 @@ namespace MonoMod.Core.Platforms.Runtimes
                 return TypeClassification.InRegister;
             }
 
+            // if the type is floating point and we're checking return, it's returned on the FP stack
+            if (isReturn && typeCode is TypeCode.Single or TypeCode.Double)
+            {
+                return TypeClassification.InRegister;
+            }
+
             // all others are passed on stack, or in a return buffer
             if (isReturn)
             {
