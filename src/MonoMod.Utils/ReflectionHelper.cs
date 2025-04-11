@@ -103,6 +103,27 @@ namespace MonoMod.Utils
             return null;
         }
 
+        public static bool HashIs(this AssemblyNameReference asmRef, Assembly asm, bool truewhennohash = true)
+        {
+            Helpers.ThrowIfArgumentNull(asmRef);
+            Helpers.ThrowIfArgumentNull(asm);
+            if (asmRef.Hash?.Length == AssemblyHashPrefix.Length + 4)
+            {
+                var hash = asmRef.Hash;
+                for (var i = 0; i < AssemblyHashPrefix.Length; i++)
+                    if (hash[i] != AssemblyHashPrefix[i])
+                        return false;
+                var rest = BitConverter.GetBytes(asm.GetHashCode());
+
+                for (var i = 0; i < 4; i++)
+                    if (hash[AssemblyHashPrefix.Length + i] != rest[i])
+                        return false;
+                return true;
+            }
+            return truewhennohash;
+            // Mono.Cecil ignores the hash for the most part, allowing us to store whatever we want in it.
+        }
+
         public static void ApplyRuntimeHash(this AssemblyNameReference asmRef, Assembly asm)
         {
             Helpers.ThrowIfArgumentNull(asmRef);
@@ -157,6 +178,7 @@ namespace MonoMod.Utils
             Justification = "Span overloads are not available on some targets this must compile for.")]
         private static MemberInfo? _ResolveReflection(MemberReference? mref, Module[]? modules)
         {
+            // TODO: Need more test cases for this.
             if (mref == null)
                 return null;
 
@@ -176,42 +198,69 @@ namespace MonoMod.Utils
              * but that part changes with every new Cecil reference context, if not
              * even more often than that.
              */
-
             var tscope =
                 mref.DeclaringType ??
                 mref as TypeReference ??
                 null;
-
-            string? asmName;
-            string? moduleName;
-
-            switch (tscope?.Scope)
+            (string?, string?) GetScope(MemberReference mref)
             {
-                case AssemblyNameReference asmNameRef:
-                    asmName = asmNameRef.GetRuntimeHashedFullName();
-                    moduleName = null;
-                    break;
+                var tscope =
+                    mref.DeclaringType ??
+                    mref as TypeReference ??
+                    null;
 
-                case ModuleDefinition moduleDef:
-                    asmName = moduleDef.Assembly.Name.GetRuntimeHashedFullName();
-                    moduleName = moduleDef.Name;
-                    break;
+                return tscope?.Scope switch
+                {
 
-                case ModuleReference moduleRef:
-                    // TODO: Is this correct? It's what cecil itself is doing...
-                    asmName = tscope.Module.Assembly.Name.GetRuntimeHashedFullName();
-                    moduleName = tscope.Module.Name;
-                    break;
+                    AssemblyNameReference asmNameRef =>
+                       (asmNameRef.GetRuntimeHashedFullName(), null),
 
-                case null:
-                default:
-                    asmName = null;
-                    moduleName = null;
-                    break;
+                    ModuleDefinition moduleDef =>
+                       (moduleDef.Assembly.Name.GetRuntimeHashedFullName(), moduleDef.Name),
+
+                    ModuleReference moduleRef =>
+                        // TODO: Is this correct? It's what cecil itself is doing...
+                        (tscope.Module.Assembly.Name.GetRuntimeHashedFullName(), tscope.Module.Name),
+
+                    _ => (null, null)
+                };
+
+
             }
-
-            cacheKey = $"{cacheKey} | {asmName ?? "NOASSEMBLY"}, {moduleName ?? "NOMODULE"}";
-
+            IEnumerable<T> PrePend<T>(IEnumerable<T> self, T to)
+            {
+                yield return to;
+                foreach (var i in self)
+                {
+                    yield return i;
+                }
+            }
+            
+            var (asmName, moduleName) = GetScope(mref);
+            string ToCacheKeyPart(string? asmName, string? moduleName)
+                => $" | {asmName ?? "NOASSEMBLY"}, {moduleName ?? "NOMODULE"}";
+            IEnumerable<MemberReference>? GetGenericParameters(MemberReference? mref)
+                => (mref switch
+                {
+                    GenericInstanceMethod methodRef => methodRef.GenericArguments,
+                    GenericInstanceType typeRef => typeRef.GenericArguments,
+                    //TODO: i don't know if there're another generic thing
+                    _ => null,
+                })?.SelectMany(x => PrePend(GetGenericParameters(x) ?? [], x));
+            var gen = GetGenericParameters(mref);
+            if (gen is { })
+            {
+                var keyGroup = gen.Select(x =>
+                {
+                    var (asmName, moduleName) = GetScope(x);
+                    return ToCacheKeyPart(asmName, moduleName);
+                });
+                cacheKey += string.Concat(keyGroup.ToArray());
+            }
+            else
+            {
+                cacheKey = string.Concat(cacheKey, ToCacheKeyPart(asmName, moduleName));
+            }
             lock (ResolveReflectionCache)
             {
                 if (ResolveReflectionCache.TryGetValue(cacheKey, out var cachedRef) &&

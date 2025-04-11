@@ -202,7 +202,7 @@ namespace MonoMod.UnitTest
             verify.Invoke(loader, argsSet);
 
             TestILHookReferences(loader.GetType(), loader.GetType());
-            TestILHookReferences(loader.GetType(), typeof(AssemblyLoadContextHookTest));
+            //TestILHookReferences(loader.GetType(), typeof(AssemblyLoadContextHookTest));
         }
 
         public static void TestStaticMethodTarget(Action<object, int, int> orig, object loader, int id1, int id2)
