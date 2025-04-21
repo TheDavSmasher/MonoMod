@@ -7,9 +7,9 @@ using Xunit.Abstractions;
 
 namespace MonoMod.UnitTest.Core
 {
-    public class ReturnSmallStructIn32Bit : TestBase
+    public class Return2ByteStructIn32Bit : TestBase
     {
-        public ReturnSmallStructIn32Bit(ITestOutputHelper helper) : base(helper)
+        public Return2ByteStructIn32Bit(ITestOutputHelper helper) : base(helper)
         {
         }
 
@@ -36,7 +36,7 @@ namespace MonoMod.UnitTest.Core
         }
 
         [Fact]
-        public void ReturningSmallStructInInstanceMethodWithParameters_DoesNotThrow()
+        public void Returning2ByteStructInInstanceMethodWithParameters_DoesNotThrow()
         {
             var all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
             var method = typeof(Clazz).GetMethod(nameof(Clazz.Original), all);
