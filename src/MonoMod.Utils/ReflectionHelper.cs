@@ -229,12 +229,22 @@ namespace MonoMod.Utils
             var (asmName, moduleName) = GetScope(mref);
             string ToCacheKeyPart(string? asmName, string? moduleName)
                 => $" | {asmName ?? "NOASSEMBLY"}, {moduleName ?? "NOMODULE"}";
-            IEnumerable<MemberReference> GetGenericArgumentsRecursive(MemberReference? mref)
+            IEnumerable<MemberReference> GetGenericArgumentsRecursive(MemberReference mref)
             {
                 yield return mref!;
-                if (mref is IGenericInstance methodRef)
+                if(mref!.DeclaringType is IGenericInstance genRef)
                 {
-                    foreach (var i in methodRef.GenericArguments)
+                    foreach (var i in genRef.GenericArguments)
+                    {
+                        foreach (var j in GetGenericArgumentsRecursive(i))
+                        {
+                            yield return j;
+                        }
+                    }
+                }
+                if (mref is IGenericInstance genRef2)
+                {
+                    foreach (var i in genRef2.GenericArguments)
                     {
                         foreach (var j in GetGenericArgumentsRecursive(i))
                         {
