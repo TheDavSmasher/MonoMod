@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace MonoMod.Core.Platforms
 {
@@ -657,7 +658,10 @@ namespace MonoMod.Core.Platforms
             // act as a simple passthrough.
             // However, TODO: this scenario can be optimized out of existence.
             var returnType = fromInfo.ReturnType;
+            var returnTypeSize = returnType.GetManagedSize();
             var hasReturnBuffer = Abi.Classify(returnType, true) is TypeClassification.ByReference;
+            if (hasReturnBuffer && (returnTypeSize == 2 || returnTypeSize == 4))
+                hasReturnBuffer = false;
             var hasThis = !fromInfo.IsStatic;
             var requiresReturnBufferFixup = hasThis && toInfo.IsStatic && hasReturnBuffer;
 
