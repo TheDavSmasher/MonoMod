@@ -32,9 +32,9 @@ jobs:
       GH_REPO: ${{ github.repository }}
       
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: read
+      issues: read
+      discussions: read
 
     outputs:
       issue_resp: ${{ steps.issue_resp.outputs.contents }}
@@ -116,10 +116,18 @@ jobs:
       with:
         path: "/tmp/pr_description"
 
+    - name: Authenticate as app
+      uses: actions/create-github-app-token@v2
+      id: app_tok
+      with:
+        app-id: ${{ vars.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVKEY }}
+
     - name: Create PR as appropriate
       if: steps.pr_title.outcome == 'success' && steps.pr_desc.outcome == 'success'
       uses: peter-evans/create-pull-request@v7
       with:
+        token: ${{ steps.app_tok.outputs.token }}
         branch: "ai/issue${{ inputs.issue_number }}"
         commit-message: ${{ steps.commit_msg.outputs.contents }}
         sign-commits: true
@@ -129,4 +137,6 @@ jobs:
 
     - name: Respond to issue
       if: steps.issue_resp.outcome == 'success'
+      env:
+        GH_TOKEN: ${{ steps.app_tok.outputs.token }}
       run: gh issue comment "${{ inputs.issue_number }}" --body-file /tmp/gh_issue_response

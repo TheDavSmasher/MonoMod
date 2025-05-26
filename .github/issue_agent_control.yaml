@@ -29,9 +29,9 @@ Prompts:
       - Question - The person filing the isuse is asking a question about MonoMod, and is only looking for an answer.
       - Bug - The person filing the issue has actually found an apparent bug. Some part of MonoMod is not behaving as it is supposed to.
 
-      Determine which of these situations applies and select the appropriate next action. At this stage, no further investigation is needed.
-      Try to make this determination using ONLY the context you have at this point. The structure of the issue report is often enough
-      to determine which category it falls under.
+      Determine which of these situations applies and select the appropriate next action. **Do not try to diagnose the issue.**
+
+      Consult the documentation (available in `docs/`) before deciding that an issue is a bug (as opposed to API misue).
 
       After making the determination, STOP. Do not continue with any other actions. You will be invoked again automatically if necessary.
     Next:
@@ -57,10 +57,10 @@ Prompts:
   question:
     Prompt: |
        1. Search issues/discussions using `gh search issues --repo {{REPOSITORY}}` to avoid duplicates.  
-       2. Reference repository code to craft your answer.  
+       2. Reference documentation (in `docs/`) repository code to craft your answer.
        3. Always prefer examples using MonoMod.RuntimeDetour, never MonoMod.Core.  
        4. If uncertain about the answer, ping `@nike4613` somewhere in the response.  
-       5. Write your response in Markdown into `/tmp/gh_issue_response`.  
+       5. Write your response in Markdown into `/tmp/gh_issue_response`. Pay careful attention to the usage in documentation when writing your response.
        6. Exit (you’re done).
 
   bug:
