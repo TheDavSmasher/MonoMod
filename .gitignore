@@ -10,6 +10,7 @@
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+*.runsettings
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -236,3 +237,4 @@ ModelManifest.xml
 *.dump
 
 .mono/
+.aider*

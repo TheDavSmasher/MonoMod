@@ -2,6 +2,7 @@
 using MonoMod.Utils;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DynamicMethod = System.Reflection.Emit.DynamicMethod;
@@ -28,7 +29,6 @@ namespace MonoMod.Core.Platforms.Runtimes
 
         private static TypeClassification ClassifyRyuJitX86(Type type, bool isReturn)
         {
-
             while (!type.IsPrimitive || type.IsEnum)
             {
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -60,10 +60,20 @@ namespace MonoMod.Core.Platforms.Runtimes
                 return TypeClassification.InRegister;
             }
 
+            // if the type is floating point and we're checking return, it's returned on the FP stack
+            if (isReturn && typeCode is TypeCode.Single or TypeCode.Double)
+            {
+                return TypeClassification.InRegister;
+            }
+
             // all others are passed on stack, or in a return buffer
             if (isReturn)
             {
-                return TypeClassification.ByReference;
+                var typeSize = type.GetManagedSize();
+                if (typeSize is 1 or 2 or 4)
+                    return TypeClassification.InRegister;
+                else
+                    return TypeClassification.ByReference;
             }
             else
             {
@@ -168,6 +178,62 @@ namespace MonoMod.Core.Platforms.Runtimes
             }
 
             return method.MethodHandle;
+        }
+
+        public bool RequiresGenericContext(MethodBase method)
+        {
+            // If neither the method nor its declaring type is generic,
+            // we do not need to worry about the generic context at all.
+            var declaringType = method.DeclaringType ?? typeof(object);
+            if (!method.IsGenericMethod && !declaringType.IsGenericType)
+                return false;
+
+            // If the method itself is generic, check whether at least one
+            // of its generic arguments makes it a shared instantiation.
+            var methodGenericArguments = method.IsGenericMethod ? method.GetGenericArguments() : Type.EmptyTypes;
+            if (methodGenericArguments.Any(IsGenericSharedType))
+                return true;
+
+            // If the method is effectively generic (i.e., it is defined on a generic type),
+            // we need to determine whether it still requires a hidden argument in the form
+            // of a MethodDesc, MethodTable, or TypeHandle pointer, or if `this` alone will
+            // suffice for this purpose.
+            //
+            // The rules are as follows:
+            //  - If both the method and its declaring type are generic, `this` alone cannot
+            //    provide the generic context the VM needs. In such cases,
+            //    we require a hidden argument for shared instantiations.
+            //  - If the method is static, there is obviously no `this` from which
+            //    the VM could infer the generic context.
+            //  - If `this` is a value type, the unboxed `this` pointer, by definition,
+            //    does not have an associated MethodTable pointer.
+            //  - If the method is a default interface method called via interface dispatch,
+            //    the VM cannot use `this` to derive the generic context because it is too
+            //    ambiguous (e.g., it may implement multiple IFoo<T> interfaces).
+            //
+            // See:
+            // https://github.com/dotnet/runtime/blob/55eee324653e01cf28809d02b25a5b0894b58d22/src/coreclr/vm/method.cpp#L1649
+            var mayNeedHiddenArg = method.IsGenericMethod
+                || method.IsStatic
+                || declaringType.IsValueType
+                || declaringType.IsInterface && !method.IsAbstract;
+            if (!mayNeedHiddenArg)
+                return false;
+
+            // Finally, check whether the type on which the method is defined may be shared.
+            var typeGenericArguments = declaringType.IsGenericType ? declaringType.GetGenericArguments() : Type.EmptyTypes;
+            return typeGenericArguments.Any(IsGenericSharedType);
+        }
+
+        private static bool IsGenericSharedType(Type type)
+        {
+            // Primitives are never shared.
+            // Value types are shared only if at least one of their nested generic arguments is shared.
+            // All other types (i.e., reference types) are always shared.
+            return (
+                !type.IsPrimitive &&
+                (!type.IsValueType || type.IsGenericType && type.GetGenericArguments().Any(IsGenericSharedType))
+            );
         }
 
         private Func<DynamicMethod, RuntimeMethodHandle>? lazyGetDmHandleHelper;
