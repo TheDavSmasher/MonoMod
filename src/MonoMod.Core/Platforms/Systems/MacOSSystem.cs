@@ -51,7 +51,7 @@ namespace MonoMod.Core.Platforms.Systems
                             SpecialArgumentKind.ThisPointer,
                             SpecialArgumentKind.UserArguments
                         },
-                        SystemVABI.ClassifyAMD64,
+                        SystemVABI.ClassifyARM64,
                         true
                     );
                     MacOSArm64Helper.Initialize();
@@ -135,7 +135,7 @@ namespace MonoMod.Core.Platforms.Systems
 
                 //memIsRead = curProt.Has(vm_prot_t.Read);
                 memIsWrite = curProt.Has(vm_prot_t.Write);
-                memIsExec = curProt.Has(vm_prot_t.Execute);
+                memIsExec = curProt.Has(vm_prot_t.Execute) || (targetKind is PatchTargetKind.Executable);
                 //canMakeRead = maxProt.Has(vm_prot_t.Read);
                 //canMakeWrite = maxProt.Has(vm_prot_t.Write);
                 //canMakeExec = maxProt.Has(vm_prot_t.Execute);
@@ -177,7 +177,7 @@ namespace MonoMod.Core.Platforms.Systems
                 fixed (byte* dataPtr = data)
                 {
                     MacOSArm64Helper.Instance.JitMemCpy(patchTarget, (IntPtr)dataPtr, (ulong)data.Length);
-                    MMDbgLog.Trace($"{data.Length} bytes wrote to 0x{(IntPtr)dataPtr:X16}");
+                    MMDbgLog.Trace($"{data.Length} bytes written to 0x{patchTarget:X16}");
                 }
             }
             else
@@ -189,6 +189,23 @@ namespace MonoMod.Core.Platforms.Systems
             if (memIsExec)
             {
                 sys_icache_invalidate((void*)patchTarget, (nuint)data.Length);
+            }
+        }
+
+        public void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer)
+        {
+            if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
+            {
+                switch (hookKind)
+                {
+                    case PrecompileMethodHookKind.ICoreJitCompiler21CompileMethod:
+                        MacOSArm64Helper.Instance!.PrecompileICoreJitCompiler21CompileMethod(hookPointer);
+                        break;
+
+                    case PrecompileMethodHookKind.CoreJitInfo70AllocMem:
+                        MacOSArm64Helper.Instance!.PrecompileICoreJitInfo70AllocMem(hookPointer);
+                        break;
+                }
             }
         }
 

@@ -52,7 +52,7 @@ namespace MonoMod.Core.Platforms.Systems
                 case ArchitectureKind.Arm64:
                     defaultAbi = new Abi(
                         new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
-                        SystemVABI.ClassifyAMD64,
+                        SystemVABI.ClassifyARM64,
                         true
                     );
                     break;
@@ -104,6 +104,10 @@ namespace MonoMod.Core.Platforms.Systems
             // now we copy target to backup, then data to target, then flush the instruction cache
             _ = target.TryCopyTo(backup);
             data.CopyTo(target);
+        }
+
+        public void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer)
+        {
         }
 
         private void RoundToPageBoundary(ref nint addr, ref nint size)

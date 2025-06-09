@@ -94,6 +94,10 @@ namespace MonoMod.Core.Platforms.Systems
             }
         }
 
+        public void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer)
+        {
+        }
+
         private unsafe static void ProtectRW(IntPtr addr, nuint size)
         {
             uint oldProtect;

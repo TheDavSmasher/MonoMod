@@ -7,10 +7,10 @@ namespace MonoMod.Core.Platforms.Architectures
     internal sealed class Arm64Arch : IArchitecture
     {
         public ArchitectureKind Target => ArchitectureKind.Arm64;
+
         public ArchitectureFeature Features => ArchitectureFeature.Immediate64;
 
         private BytePatternCollection? lazyKnownMethodThunks;
-
         public BytePatternCollection KnownMethodThunks => Helpers.GetOrInit(ref lazyKnownMethodThunks, CreateKnownMethodThunks);
 
         public IAltEntryFactory AltEntryFactory => null!;
@@ -85,18 +85,91 @@ namespace MonoMod.Core.Platforms.Architectures
 
         private static BytePatternCollection CreateKnownMethodThunks()
         {
-            const ushort An = BytePattern.SAnyValue;
-            const ushort Ad = BytePattern.SAddressValue;
             const byte Bn = BytePattern.BAnyValue;
             const byte Bd = BytePattern.BAddressValue;
 
             if (PlatformDetection.Runtime is RuntimeKind.Framework or RuntimeKind.CoreCLR)
             {
                 return new BytePatternCollection(
+                    // BytePatternCollection cannot handle both a partial bit match and extracting the remainder as an address for the same byte.
+                    // Unfortunately LDR (immediate) has bits 4-0 as Rt and 23-5 as imm19 and the final address is computed as pc + imm19 * 4.
+                    //
+                    // Until BytePatternCollection is improved, we can sort of workaround the limitation by the nature of the alignments and
+                    // simply ignore the lower 3 bits. However that means the address needs LShift by 3 to compensate. Since we also need to multiply
+                    // by 4 for the proper address calculation, that equates to a total LShift of 5. To avoid any problems, the masks are set such
+                    // that the ignored 3 bits must always be 0 for the target address ldr instructions. For the other addresses can we can exactly match
+                    // on the interested bits because we aren't going to extract them, though allowing them deviate at all is probably silly.
+                    //
+                    //
+                    // .NET 8 Support
+                    //
+                    // #define STUB_PAGE_SIZE 16384
+                    // #define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
+                    //
+                    // FixupPrecodeCode
                     new BytePattern(
-                        new AddressMeaning(AddressKind.Abs64),
-                        true,
-                        0x48, 0x85, 0xc9, 0x48
+                        new AddressMeaning(AddressKind.Rel32 | AddressKind.Indirect, 0, 5), mustMatchAtStart: true,
+                        new byte[]
+                        {
+                            0xff, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0x1f, 0x00, 0x00, 0xff,
+                            0x1f, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                        },
+                        new byte[]
+                        {
+                            0x0b,   Bd,   Bd, 0x58, // ldr x11, DATA_SLOT(FixupPrecode, Target)
+                            0x60, 0x01, 0x1f, 0xd6, // br x11
+                            0x0c,   Bn,   Bn, 0x58, // ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
+                            0x2b,   Bn,   Bn, 0x58, // ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
+                            0x60, 0x01, 0x1f, 0xd6, // br x11
+                        }
+                    ),
+                    // StubPrecodeCode
+                    new BytePattern(
+                        new AddressMeaning(AddressKind.Rel32 | AddressKind.Indirect, 0, 5), mustMatchAtStart: true,
+                        new byte[]
+                        {
+                            0xff, 0x00, 0x00, 0xff,
+                            0x1f, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                        },
+                        new byte[]
+                        {
+                            0x4a,   Bd,   Bd, 0x58, // ldr x10, DATA_SLOT(StubPrecode, Target)
+                            0xec,   Bn,   Bn, 0x58, // ldr x12, DATA_SLOT(StubPrecode, SecretParam)
+                            0x40, 0x01, 0x1f, 0xd6, // br x10
+                        }
+                    ),
+                    // CallCountingStubCode
+                    new BytePattern(
+                        new AddressMeaning(AddressKind.Rel32 | AddressKind.Indirect, 0, 5), mustMatchAtStart: true,
+                        new byte[]
+                        {
+                            0xff, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0x1f, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                            0x1f, 0x00, 0x00, 0xff,
+                            0xff, 0xff, 0xff, 0xff,
+                        },
+                        new byte[]
+                        {
+                            0x09,   Bd,   Bd, 0x58, // ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
+                            0x2a, 0x01, 0x40, 0x79, // ldrh w10, [x9]
+                            0x4a, 0x05, 0x00, 0x71, // subs w10, w10, #1
+                            0x2a, 0x01, 0x02, 0x79, // strh w10, [x9]
+                            0x60, 0x00, 0x00, 0x54, // beq CountReachedZero
+                            0xa9,   Bn,   Bn, 0x58, // ldr  x9, DATA_SLOT(CallCountingStub, TargetForMethod)
+                            0x20, 0x01, 0x1f, 0xd6, // br   x9
+                                                    // CountReachedZero:
+                            0xaa,   Bn,   Bn, 0x58, // ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached)
+                            0x40, 0x01, 0x1F, 0xD6, // br   x10
+                        }
                     )
                 );
             }

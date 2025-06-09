@@ -130,13 +130,12 @@ namespace MonoMod.Core.Platforms.Runtimes
                 byte** nativeEntry,
                 uint* nativeSizeOfCode)
             {
-
-                *nativeEntry = null;
-                *nativeSizeOfCode = 0;
-
                 if (jit == IntPtr.Zero)
                     return CorJitResult.CORJIT_OK;
 
+                *nativeEntry = null;
+                *nativeSizeOfCode = 0;
+                
                 var lastError = MarshalEx.GetLastPInvokeError();
                 nint nativeException = default;
                 var pNEx = GetNativeExceptionSlot is { } getNex ? getNex() : null;
@@ -257,7 +256,9 @@ namespace MonoMod.Core.Platforms.Runtimes
         protected unsafe virtual void PatchWrapperVtable(IntPtr* vtbl)
         {
             allocMemDelegate = CastAllocMemToRealType(CreateAllocMemDelegate());
-            vtbl[VtableIndexICorJitInfoAllocMem] = EHNativeToManaged(Marshal.GetFunctionPointerForDelegate(allocMemDelegate), out n2mAllocMemHelper);
+            var allocMemFnPtr = EHNativeToManaged(Marshal.GetFunctionPointerForDelegate(allocMemDelegate), out n2mAllocMemHelper);
+            System.PrecompileMethodHook(PrecompileMethodHookKind.CoreJitInfo70AllocMem, allocMemFnPtr);
+            vtbl[VtableIndexICorJitInfoAllocMem] = allocMemFnPtr;
         }
 
         protected virtual int VtableIndexICorJitInfoAllocMem => V70.ICorJitInfoVtable.AllocMemIndex;
@@ -303,6 +304,9 @@ namespace MonoMod.Core.Platforms.Runtimes
 
             public unsafe void AllocMemHook(IntPtr thisPtr, V70.AllocMemArgs* args)
             {
+                if (thisPtr == IntPtr.Zero)
+                    return;
+
                 var wrap = (ICorJitInfoWrapper*)thisPtr;
                 var wrapped = wrap->Wrapped;
                 InvokeAllocMemPtr.InvokeAllocMem(GetRealInvokePtr((*wrapped)[ICorJitInfoAllocMemIdx]), (IntPtr)wrapped, args);

@@ -30,6 +30,12 @@ namespace MonoMod.Core.Platforms.Systems
             return TypeClassification.InRegister;
         }
 
+        public static TypeClassification ClassifyARM64(Type type, bool isReturn)
+        {
+            // delegate to AMD64 since it seems to be the same for ARM64.
+            return ClassifyAMD64(type, isReturn);
+        }
+
         private static bool AnyFieldsNotFloat(Type type)
         {
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))

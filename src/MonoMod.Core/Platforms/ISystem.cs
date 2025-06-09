@@ -61,6 +61,13 @@ namespace MonoMod.Core.Platforms
         /// <param name="data">The data to write into <paramref name="patchTarget"/>.</param>
         /// <param name="backup">A span to fill will the data which was already present, or an empty span.</param>
         void PatchData(PatchTargetKind targetKind, IntPtr patchTarget, ReadOnlySpan<byte> data, Span<byte> backup);
+
+        /// <summary>
+        /// Precompiles a managed method hook. 
+        /// </summary>
+        /// <param name="hookKind">The hook method to precompile.</param>
+        /// <param name="hookPointer">Function pointer to the method hook.</param>
+        void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer);
     }
 
     /// <summary>
@@ -76,5 +83,21 @@ namespace MonoMod.Core.Platforms
         /// The data at the target is expected to be read-only.
         /// </summary>
         ReadOnly,
+    }
+
+    /// <summary>
+    /// The kind of hook to precompile.
+    /// </summary>
+    public enum PrecompileMethodHookKind
+    {
+        /// <summary>
+        /// ICoreJitCompiler.CompileMethod for Core Runtime v2.1
+        /// </summary>
+        ICoreJitCompiler21CompileMethod,
+
+        /// <summary>
+        /// ICoreJitInfo.AllocMem for Core Runtime v7.0
+        /// </summary>
+        CoreJitInfo70AllocMem
     }
 }

@@ -114,6 +114,7 @@ namespace MonoMod.Core.Platforms.Runtimes
             byte* nativeStart;
             uint nativeSize;
             InvokeCompileMethodPtr.InvokeCompileMethod(method, IntPtr.Zero, IntPtr.Zero, &methodInfo, 0, &nativeStart, &nativeSize);
+            System.PrecompileMethodHook(PrecompileMethodHookKind.ICoreJitCompiler21CompileMethod, method);
         }
 
         // runtimes should override this if they need to significantly change the shape of CompileMethod
@@ -175,12 +176,11 @@ namespace MonoMod.Core.Platforms.Runtimes
                 byte** pNativeEntry,
                 uint* pNativeSizeOfCode)
             {
+                if (jit == IntPtr.Zero)
+                    return CorJitResult.CORJIT_OK;
 
                 *pNativeEntry = null;
                 *pNativeSizeOfCode = 0;
-
-                if (jit == IntPtr.Zero)
-                    return CorJitResult.CORJIT_OK;
 
                 var lastError = MarshalEx.GetLastPInvokeError();
                 nint nativeException = default;
