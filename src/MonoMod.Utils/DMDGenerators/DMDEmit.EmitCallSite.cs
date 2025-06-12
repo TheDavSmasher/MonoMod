@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
-using static MonoMod.Utils.Interop.Windows;
 using CallSite = Mono.Cecil.CallSite;
 
 namespace MonoMod.Utils
@@ -464,7 +463,10 @@ namespace MonoMod.Utils
                             AddElementType(type);
                         }
                         // https://github.com/dotnet/runtime/blob/4e0dc086de5952b87e0fdac43690edb5acc4bd6b/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/SignatureHelper.cs#L449
-                        // btw module is always null
+                        // https://referencesource.microsoft.com/#mscorlib/system/reflection/emit/signaturehelper.cs,491
+                        // btw dynamic method il generator emitcalli never gives it a module, so it is always null
+                        // https://github.com/dotnet/runtime/blob/4e0dc086de5952b87e0fdac43690edb5acc4bd6b/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicILGenerator.cs#L450
+                        // https://referencesource.microsoft.com/#mscorlib/system/reflection/emit/dynamicilgenerator.cs,538
                         else if (true || tokenCreator/*signatureHelper.module*/ == null)
                         {
                             InternalAddRuntimeType(clsArgument);
