@@ -22,6 +22,8 @@ namespace MonoMod.UnitTest
         }
         static unsafe RandomStruct VerifyStruct(RandomStruct o, ref RandomStruct r, RandomStruct[] a, RandomStruct* p)
         {
+            // test if it receives valid arguments
+            // should only fail when runtime is corrupted
             Assert.Equal(typeof(RandomStruct[]), a.GetType());
             Assert.Equal(r, *p);
             r = new RandomStruct();
@@ -31,6 +33,8 @@ namespace MonoMod.UnitTest
 #pragma warning disable CS8500
         static unsafe RandomClass VerifyClass(RandomClass o, ref RandomClass r, RandomClass[] a, RandomClass* p)
         {
+            // test if it receives valid arguments
+            // should only fail when runtime is corrupted
             Assert.Equal(typeof(RandomClass), o.GetType());
             Assert.Equal(typeof(RandomClass[]), a.GetType());
             Assert.Equal(r, *p);
