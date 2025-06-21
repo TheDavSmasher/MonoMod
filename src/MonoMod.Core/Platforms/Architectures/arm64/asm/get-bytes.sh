@@ -3,7 +3,7 @@
 name="$1"
 groupSize=4
 
-clang -c -o "${name}" "${name}.s" && \
+clang -c -o "${name}" "${name}.S" && \
 objcopy -O binary -j .text "${name}" "${name}.bin" && \
 od -An -tx1 -v "${name}.bin" | \
 tr -d '\n' | \
