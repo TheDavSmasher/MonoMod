@@ -19,7 +19,7 @@ void mmch_precompile_icorejitcompiler21_compilemethod(unsigned (*p)(void *, void
     p(NULL, NULL, NULL, 0, NULL, NULL);
 }
 
-void mmch_precompile_icorejitinfo70_allocmem(void (*p)(void *, void *))
+void mmch_precompile_icorejitinfo60_allocmem(void (*p)(void *, void *))
 {
     p(NULL, NULL);
 }

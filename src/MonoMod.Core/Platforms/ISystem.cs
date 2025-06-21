@@ -96,8 +96,8 @@ namespace MonoMod.Core.Platforms
         ICoreJitCompiler21CompileMethod,
 
         /// <summary>
-        /// ICoreJitInfo.AllocMem for Core Runtime v7.0
+        /// ICoreJitInfo.AllocMem for Core Runtime v6.0
         /// </summary>
-        CoreJitInfo70AllocMem
+        CoreJitInfo60AllocMem
     }
 }

@@ -262,7 +262,7 @@ namespace MonoMod.Core.Platforms.Runtimes
         {
             allocMemDelegate = CastAllocMemToRealType(CreateAllocMemDelegate());
             var allocMemFnPtr = EHNativeToManaged(Marshal.GetFunctionPointerForDelegate(allocMemDelegate), out n2mAllocMemHelper);
-            System.PrecompileMethodHook(PrecompileMethodHookKind.CoreJitInfo70AllocMem, allocMemFnPtr);
+            System.PrecompileMethodHook(PrecompileMethodHookKind.CoreJitInfo60AllocMem, allocMemFnPtr);
             vtbl[VtableIndexICorJitInfoAllocMem] = allocMemFnPtr;
         }
 

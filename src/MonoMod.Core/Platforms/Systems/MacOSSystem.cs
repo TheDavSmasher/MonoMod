@@ -189,8 +189,8 @@ namespace MonoMod.Core.Platforms.Systems
                         MacOSArm64Helper.Instance!.PrecompileICoreJitCompiler21CompileMethod(hookPointer);
                         break;
 
-                    case PrecompileMethodHookKind.CoreJitInfo70AllocMem:
-                        MacOSArm64Helper.Instance!.PrecompileICoreJitInfo70AllocMem(hookPointer);
+                    case PrecompileMethodHookKind.CoreJitInfo60AllocMem:
+                        MacOSArm64Helper.Instance!.PrecompileICoreJitInfo60AllocMem(hookPointer);
                         break;
                 }
             }
