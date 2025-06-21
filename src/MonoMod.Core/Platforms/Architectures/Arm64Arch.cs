@@ -65,11 +65,11 @@ namespace MonoMod.Core.Platforms.Architectures
         {
             ReadOnlySpan<byte> stubData = [
                 0x00, 0x04, 0x40, 0xF9, // ldr x0, [x0, #8]
-                0x08, 0x00, 0x40, 0xF9, // ldr x8, [x0]
-                0x8F, 0x00, 0x00, 0x18, // ldr w15, _offset
-                0x08, 0x01, 0x0F, 0x8B, // add x8, x8, x15
-                0x08, 0x01, 0x40, 0xF9, // ldr x8, [x8]
-                0x00, 0x01, 0x1F, 0xD6, // br x8
+                0x09, 0x00, 0x40, 0xF9, // ldr x9, [x0]
+                0x8A, 0x00, 0x00, 0x18, // ldr w10, _offset
+                0x29, 0x01, 0x0A, 0x8B, // add x9, x9, x10
+                0x29, 0x01, 0x40, 0xF9, // ldr x9, [x9]
+                0x20, 0x01, 0x1F, 0xD6, // br x9
                 0x00, 0x00, 0x00, 0x00, // _offset: .word 0x0
             ];
 
@@ -78,9 +78,20 @@ namespace MonoMod.Core.Platforms.Architectures
 
         public IAllocatedMemory CreateSpecialEntryStub(IntPtr target, IntPtr argument)
         {
-            // CreateNativeExceptionHelper should be implemented first
+            ReadOnlySpan<byte> stubData = [
+                0x89, 0x00, 0x00, 0x58, // ldr x9, [pc, #16]
+                0xaa, 0x00, 0x00, 0x58, // ldr x10, [pc, #24]
+                0x40, 0x01, 0x1f, 0xd6, // br x10
+                0x1f, 0x20, 0x03, 0xd5, // nop
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+            ];
 
-            throw new NotImplementedException();
+            Span<byte> stub = stackalloc byte[stubData.Length];
+            stubData.CopyTo(stub);
+            Unsafe.WriteUnaligned(ref stub[16], argument);
+            Unsafe.WriteUnaligned(ref stub[24], target);
+            return Shared.CreateSingleExecutableStub(System, stub);
         }
 
         private static BytePatternCollection CreateKnownMethodThunks()
@@ -268,17 +279,13 @@ namespace MonoMod.Core.Platforms.Architectures
 
             public override int GetBytes(IntPtr from, IntPtr to, Span<byte> buffer, object? data, out IDisposable? allocHandle)
             {
-                // ldr x9, _target
-                buffer[0] = 0x49;
-                buffer[1] = 0x00;
-                buffer[2] = 0x00;
-                buffer[3] = 0x58;
-                // br x9
-                buffer[4] = 0x20;
-                buffer[5] = 0x01;
-                buffer[6] = 0x1F;
-                buffer[7] = 0xD6;
-                // _target: .quad 0x0
+                ReadOnlySpan<byte> stubData = [
+                    0x49, 0x00, 0x00, 0x58, // ldr x9, _target
+                    0x20, 0x01, 0x1F, 0xD6, // br x9
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // _target: .quad 0x0
+                ];
+
+                stubData.CopyTo(buffer);
                 Unsafe.WriteUnaligned(ref buffer[8], (ulong)to);
 
                 allocHandle = null;
