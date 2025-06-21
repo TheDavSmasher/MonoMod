@@ -378,7 +378,7 @@ namespace MonoMod.Core.Platforms.Systems
 
         private static ReadOnlySpan<byte> NEHTempl => "/tmp/mm-exhelper.so.XXXXXX"u8;
 
-        private unsafe PosixExceptionHelper? CreateNativeExceptionHelper()
+        private unsafe PosixExceptionHelper CreateNativeExceptionHelper()
         {
             Helpers.Assert(arch is not null);
 
