@@ -179,23 +179,6 @@ namespace MonoMod.Core.Platforms.Systems
             }
         }
 
-        public void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer)
-        {
-            if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
-            {
-                switch (hookKind)
-                {
-                    case PrecompileMethodHookKind.ICoreJitCompiler21CompileMethod:
-                        MacOSArm64Helper.Instance!.PrecompileICoreJitCompiler21CompileMethod(hookPointer);
-                        break;
-
-                    case PrecompileMethodHookKind.CoreJitInfo60AllocMem:
-                        MacOSArm64Helper.Instance!.PrecompileICoreJitInfo60AllocMem(hookPointer);
-                        break;
-                }
-            }
-        }
-
         private static unsafe void MakePageWritable(nint addrInPage)
         {
             Helpers.Assert(GetLocalRegionInfo(addrInPage, out var allocStart, out var allocSize, out var allocProt, out var allocMaxProt));

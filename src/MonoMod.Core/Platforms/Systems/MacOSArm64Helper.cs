@@ -23,13 +23,9 @@ namespace MonoMod.Core.Platforms.Systems
         private const string TempFileNameTmpl = "/tmp/mm-macos-silicon-helper.dylib.XXXXXX";
         private const string LogicalName = "helper_macos_arm64.dylib";
         private const string JitMemCpyExport = "mmch_jit_memcpy";
-        private const string PrecompileICoreJitCompiler21CompileMethodExport = "mmch_precompile_icorejitcompiler21_compilemethod";
-        private const string PrecompileICoreJitInfo60AllocMemExport = "mmch_precompile_icorejitinfo60_allocmem";
         
         private readonly IntPtr _handle;
         private readonly IntPtr _jitMemCpy;
-        private readonly IntPtr _precompileICoreJitCompiler21CompileMethod;
-        private readonly IntPtr _precompileICoreJitInfo60AllocMem;
         
         private MacOSArm64Helper(string fileName)
         {
@@ -39,12 +35,6 @@ namespace MonoMod.Core.Platforms.Systems
             {
                 _jitMemCpy = DynDll.GetExport(_handle, JitMemCpyExport);
                 Helpers.Assert(_jitMemCpy != IntPtr.Zero);
-
-                _precompileICoreJitCompiler21CompileMethod = DynDll.GetExport(_handle, PrecompileICoreJitCompiler21CompileMethodExport);
-                Helpers.Assert(_precompileICoreJitCompiler21CompileMethod != IntPtr.Zero);
-
-                _precompileICoreJitInfo60AllocMem = DynDll.GetExport(_handle, PrecompileICoreJitInfo60AllocMemExport);
-                Helpers.Assert(_precompileICoreJitInfo60AllocMem != IntPtr.Zero);
             }
             catch
             {
@@ -64,28 +54,6 @@ namespace MonoMod.Core.Platforms.Systems
             var fnPtr = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, ulong, void>)_jitMemCpy;
             
             fnPtr(dst, src, size);
-        }
-
-        /// <summary>
-        /// Precompiles an ICoreJitCompiler.CompileMethod hook method.
-        /// </summary>
-        /// <param name="cmPtr">Function pointer to ICoreJitCompiler.CompileMethod hook to be compiled.</param>
-        public unsafe void PrecompileICoreJitCompiler21CompileMethod(IntPtr cmPtr)
-        {
-            var fnPtr = (delegate* unmanaged[Cdecl]<IntPtr, void>)_precompileICoreJitCompiler21CompileMethod;
-
-            fnPtr(cmPtr);
-        }
-
-        /// <summary>
-        /// Precompiles an ICoreJitInfo.AllocMem hook method.
-        /// </summary>
-        /// <param name="amPtr">Function pointer to ICoreJitInfo.AllocMem hook to be compiled.</param>
-        public unsafe void PrecompileICoreJitInfo60AllocMem(IntPtr amPtr)
-        {
-            var fnPtr = (delegate* unmanaged[Cdecl]<IntPtr, void>)_precompileICoreJitInfo60AllocMem;
-
-            fnPtr(amPtr);
         }
 
         private static void CreateTempFile(string tmpl, out int fd, out string fileName)

@@ -114,7 +114,6 @@ namespace MonoMod.Core.Platforms.Runtimes
             byte* nativeStart;
             uint nativeSize;
             InvokeCompileMethodPtr.InvokeCompileMethod(method, IntPtr.Zero, IntPtr.Zero, &methodInfo, 0, &nativeStart, &nativeSize);
-            System.PrecompileMethodHook(PrecompileMethodHookKind.ICoreJitCompiler21CompileMethod, method);
         }
 
         // runtimes should override this if they need to significantly change the shape of CompileMethod

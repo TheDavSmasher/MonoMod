@@ -106,10 +106,6 @@ namespace MonoMod.Core.Platforms.Systems
             data.CopyTo(target);
         }
 
-        public void PrecompileMethodHook(PrecompileMethodHookKind hookKind, IntPtr hookPointer)
-        {
-        }
-
         private void RoundToPageBoundary(ref nint addr, ref nint size)
         {
             var newAddr = allocator.RoundDownToPageBoundary(addr);

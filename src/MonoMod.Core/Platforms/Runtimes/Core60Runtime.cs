@@ -265,7 +265,6 @@ namespace MonoMod.Core.Platforms.Runtimes
 
             // invoke our allocMemFnPtr through IAMP to ensure that the JIT has compiled any needed thunks
             InvokeAllocMemPtr.InvokeAllocMem(allocMemFnPtr, IntPtr.Zero, null);
-            System.PrecompileMethodHook(PrecompileMethodHookKind.CoreJitInfo60AllocMem, allocMemFnPtr);
             vtbl[VtableIndexICorJitInfoAllocMem] = allocMemFnPtr;
         }
 
