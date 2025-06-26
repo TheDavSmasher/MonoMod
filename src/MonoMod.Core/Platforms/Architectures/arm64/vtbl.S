@@ -1,4 +1,4 @@
-// ./get-bytes.sh vtblProxyStub
+// ./get-bytes.sh vtbl
 
 .text
 .global _main
