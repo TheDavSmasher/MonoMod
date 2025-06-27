@@ -10,6 +10,53 @@ namespace MonoMod.Core.Interop
 {
     internal static unsafe partial class CoreCLR
     {
+        public readonly struct InvokeCompileMethodHookPostPtr
+        {
+            private readonly IntPtr methodPtr;
+            public InvokeCompileMethodHookPostPtr(
+                delegate*<
+                    IntPtr, // method
+                    IntPtr, // ICorJitCompiler*
+                    IntPtr, // ICorJitInfo*
+                    V21.CORINFO_METHOD_INFO*, // CORINFO_METHOD_INFO*
+                    uint,
+                    byte**,
+                    uint*,
+                    CorJitResult,
+                    V60.AllocMemArgs*,
+                    CorJitResult
+                > ptr
+            )
+            {
+                methodPtr = (IntPtr)ptr;
+            }
+
+            public delegate*<
+                    IntPtr, // method
+                    IntPtr, // ICorJitCompiler*
+                    IntPtr, // ICorJitInfo*
+                    V21.CORINFO_METHOD_INFO*, // CORINFO_METHOD_INFO*
+                    uint,
+                    byte**,
+                    uint*,
+                    CorJitResult,
+                    V60.AllocMemArgs*,
+                    CorJitResult
+                > InvokeCompileMethodHookPost
+                => (delegate*<
+                    IntPtr, // method
+                    IntPtr, // ICorJitCompiler*
+                    IntPtr, // ICorJitInfo*
+                    V21.CORINFO_METHOD_INFO*, // CORINFO_METHOD_INFO*
+                    uint,
+                    byte**,
+                    uint*,
+                    CorJitResult,
+                    V60.AllocMemArgs*,
+                    CorJitResult
+                >)methodPtr;
+        }
+
         public readonly struct InvokeAllocMemPtr
         {
             private readonly IntPtr methodPtr;
@@ -318,6 +365,44 @@ namespace MonoMod.Core.Interop
                         CorJitResult
                     >)functionPtr;
                 return fnPtr(thisPtr, corJitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode);
+            }
+
+            [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+            public delegate CorJitResult CompileMethodHookPostDelegate(
+                IntPtr thisPtr, // ICorJitCompiler*
+                IntPtr corJitInfo, // ICorJitInfo*
+                CORINFO_METHOD_INFO* methodInfo, // CORINFO_METHOD_INFO*
+                uint flags,
+                byte** nativeEntry,
+                uint* nativeSizeOfCode,
+                CorJitResult res,
+                AllocMemArgs* allocMemArgs
+            );
+
+            public static InvokeCompileMethodHookPostPtr InvokeCompileMethodHookPostPtr => new(&InvokeCompileMethodHookPost);
+
+            public static CorJitResult InvokeCompileMethodHookPost(
+                IntPtr functionPtr,
+                IntPtr thisPtr, // ICorJitCompiler*
+                IntPtr corJitInfo, // ICorJitInfo*
+                CORINFO_METHOD_INFO* methodInfo, // CORINFO_METHOD_INFO*
+                uint flags,
+                byte** nativeEntry,
+                uint* nativeSizeOfCode,
+                CorJitResult res,
+                AllocMemArgs *pArgs)
+            {
+                // this is present so that we can pre-JIT this method by calling it
+                if (functionPtr == IntPtr.Zero)
+                    return res;
+
+                var fnPtr =
+                    (delegate* unmanaged[Thiscall]<
+                        IntPtr, IntPtr, CORINFO_METHOD_INFO*,
+                        uint, byte**, uint*,
+                        CorJitResult, AllocMemArgs *, CorJitResult
+                    >)functionPtr;
+                return fnPtr(thisPtr, corJitInfo, methodInfo, flags, nativeEntry, nativeSizeOfCode, res, pArgs);
             }
 
             public enum MethodClassification

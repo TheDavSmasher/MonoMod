@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 #endif
 using static MonoMod.Core.Interop.CoreCLR;
+using static MonoMod.Core.Interop.CoreCLR.V60;
 
 namespace MonoMod.Core.Platforms.Runtimes
 {
@@ -65,6 +66,46 @@ namespace MonoMod.Core.Platforms.Runtimes
                     return ref Unsafe.Add(ref Unsafe.As<ulong, IntPtr>(ref data[0]), index);
                 }
             }
+        }
+
+        protected override void InstallJitHook(IntPtr jit)
+        {
+            if ((System.Features & SystemFeature.NativeJitHooks) != 0)
+                InstallNativeJitHook(jit);
+            else
+                base.InstallJitHook(jit);
+        }
+
+        private Delegate? ourCompileMethodHookPost;
+
+        private unsafe void InstallNativeJitHook(IntPtr jit)
+        {
+            CheckVersionGuid(jit);
+
+            // Get the real compile method vtable slot
+            var compileMethodSlot = GetVTableEntry(jit, VtableIndexICorJitCompilerCompileMethod);
+
+            var hookConfig = GetNativeJitHookConfig();
+            var compileHookPost = CastCompileMethodHookPostToRealType(CreateCompileMethodHookPostDelegate());
+            ourCompileMethodHookPost = compileHookPost;
+
+            var ourCompileMethodHookPostPtr = Marshal.GetFunctionPointerForDelegate(compileHookPost);
+
+            V21.CORINFO_METHOD_INFO methodInfo;
+            byte* nativeStart;
+            uint nativeSize;
+            AllocMemArgs args;
+            V60.InvokeCompileMethodHookPostPtr.InvokeCompileMethodHookPost(ourCompileMethodHookPostPtr, IntPtr.Zero, IntPtr.Zero, &methodInfo, 0, &nativeStart, &nativeSize, CorJitResult.CORJIT_OK, &args);
+
+            hookConfig->compileMethod = *compileMethodSlot;
+            hookConfig->compileMethodHookPost = ourCompileMethodHookPostPtr;
+            var ourCompileMethodHookPtr = hookConfig->compileMethodHook;
+
+            // and now we can install our method pointer as a JIT hook
+            Span<byte> ptrData = stackalloc byte[sizeof(IntPtr)];
+            MemoryMarshal.Write(ptrData, ref ourCompileMethodHookPtr);
+
+            System.PatchData(PatchTargetKind.ReadOnly, (IntPtr)compileMethodSlot, ptrData, default);
         }
 
         protected unsafe override Delegate CreateCompileMethodDelegate(IntPtr compileMethod)
@@ -252,6 +293,115 @@ namespace MonoMod.Core.Platforms.Runtimes
                         *pNEx = nativeException;
                     MarshalEx.SetLastPInvokeError(lastError);
                 }
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NativeJitHookConfig
+        {
+            public IntPtr compileMethod;
+            public IntPtr compileMethodHook;
+            public IntPtr compileMethodHookPost;
+            public IntPtr allocMem;
+            public IntPtr allocMemHook;
+        }
+
+        protected unsafe virtual NativeJitHookConfig* GetNativeJitHookConfig() => (NativeJitHookConfig*)System.GetNativeJitHookConfig(60);
+
+        protected unsafe virtual Delegate CreateCompileMethodHookPostDelegate()
+        {
+            return new JitHookPostDelegateHolder(this).CompileMethodHookPost;
+        }
+
+        protected virtual Delegate CastCompileMethodHookPostToRealType(Delegate del)
+            => del.CastDelegate<V60.CompileMethodHookPostDelegate>();
+
+        [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Only instantiated once, and has to not be disposed otherwise stuff will break.")]
+        private sealed class JitHookPostDelegateHolder
+        {
+            public readonly Core60Runtime Runtime;
+            public readonly JitHookHelpersHolder JitHookHelpers;
+            
+            public static volatile bool patchedICorJitInfo;
+            public static readonly object patchedICorJitInfoSyncRoot = new object();
+
+            public JitHookPostDelegateHolder(Core60Runtime runtime)
+            {
+                Runtime = runtime;
+                JitHookHelpers = runtime.JitHookHelpers;
+            }
+
+            [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+                Justification = "We want to swallow exceptions here to prevent them from bubbling out of the JIT")]
+            public unsafe CorJitResult CompileMethodHookPost(
+                IntPtr jit, // ICorJitCompiler*
+                IntPtr corJitInfo, // ICorJitInfo*
+                V21.CORINFO_METHOD_INFO* methodInfo, // CORINFO_METHOD_INFO*
+                uint flags,
+                byte** nativeEntry,
+                uint* nativeSizeOfCode,
+                CorJitResult res,
+                AllocMemArgs* pArgs)
+            {
+                if (jit == IntPtr.Zero)
+                    return res;
+
+                try
+                {
+                    // To avoid the performance implications of having both a Pre and Post hook method, we defer the allocMem patching until the first post hook invocation.
+                    // TODO: It may be necessary to force a compileMethod invocation to prime the patching. Alternatively, we could add a Pre hook that is only called once.
+                    if (!patchedICorJitInfo)
+                    {
+                        lock (patchedICorJitInfoSyncRoot)
+                        {
+                            if (!patchedICorJitInfo)
+                            {
+                                var allocMemSlot = GetVTableEntry(corJitInfo, Runtime.VtableIndexICorJitInfoAllocMem);
+                                var hookConfig = Runtime.GetNativeJitHookConfig();
+                                hookConfig->allocMem = *allocMemSlot;
+
+                                var ourAllocMemPtr = hookConfig->allocMemHook;
+                                Span<byte> ptrData = stackalloc byte[sizeof(IntPtr)];
+                                MemoryMarshal.Write(ptrData, ref ourAllocMemPtr);
+
+                                Runtime.System.PatchData(PatchTargetKind.ReadOnly, (IntPtr)allocMemSlot, ptrData, default);
+                                patchedICorJitInfo = true;
+                            }
+                        }
+                    }
+
+                    // This is the top level JIT entry point, do our custom stuff
+                    RuntimeTypeHandle[]? genericClassArgs = null;
+                    RuntimeTypeHandle[]? genericMethodArgs = null;
+
+                    if (methodInfo->args.sigInst.classInst != null)
+                    {
+                        genericClassArgs = new RuntimeTypeHandle[methodInfo->args.sigInst.classInstCount];
+                        for (var i = 0; i < genericClassArgs.Length; i++)
+                        {
+                            genericClassArgs[i] = JitHookHelpers.GetTypeFromNativeHandle(methodInfo->args.sigInst.classInst[i]).TypeHandle;
+                        }
+                    }
+                    if (methodInfo->args.sigInst.methInst != null)
+                    {
+                        genericMethodArgs = new RuntimeTypeHandle[methodInfo->args.sigInst.methInstCount];
+                        for (var i = 0; i < genericMethodArgs.Length; i++)
+                        {
+                            genericMethodArgs[i] = JitHookHelpers.GetTypeFromNativeHandle(methodInfo->args.sigInst.methInst[i]).TypeHandle;
+                        }
+                    }
+
+                    var declaringType = JitHookHelpers.GetDeclaringTypeOfMethodHandle(methodInfo->ftn).TypeHandle;
+                    var method = JitHookHelpers.CreateHandleForHandlePointer(methodInfo->ftn);
+
+                    Runtime.OnMethodCompiledCore(declaringType, method, genericClassArgs, genericMethodArgs, (IntPtr)(*nativeEntry), pArgs->hotCodeBlockRW, *nativeSizeOfCode);
+                }
+                catch
+                {
+                    // eat the exception so we don't accidentally bubble up to native code
+                }
+
+                return res;
             }
         }
 

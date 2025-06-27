@@ -70,7 +70,7 @@ namespace MonoMod.Core.Platforms.Runtimes
         protected static unsafe IntPtr ReadObjectVTable(IntPtr @object, int index)
             => *GetVTableEntry(@object, index);
 
-        private unsafe void CheckVersionGuid(IntPtr jit)
+        protected unsafe void CheckVersionGuid(IntPtr jit)
         {
             var getVersionIdentPtr = (delegate* unmanaged[Thiscall]<IntPtr, Guid*, void>)ReadObjectVTable(jit, VtableIndexICorJitCompilerGetVersionGuid);
             Guid guid;

@@ -426,5 +426,10 @@ namespace MonoMod.Core.Platforms.Systems
             }
             return PosixExceptionHelper.CreateHelper(arch, fname);
         }
+
+        public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

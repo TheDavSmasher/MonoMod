@@ -42,7 +42,7 @@ namespace MonoMod.Core.Platforms.Systems
                     );
                     break;
                 case ArchitectureKind.Arm64:
-                    Features = SystemFeature.RXPages;
+                    Features = SystemFeature.RXPages | SystemFeature.NativeJitHooks;
                     DefaultAbi = new Abi(
                         new[]
                         {
@@ -573,6 +573,14 @@ namespace MonoMod.Core.Platforms.Systems
                 embedded.CopyTo(fs);
             }
             return PosixExceptionHelper.CreateHelper(arch, fname);
+        }
+
+        public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
+        {
+            if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
+                return MacOSArm64Helper.Instance?.GetJitHookConfig(runtimeMajMin) ?? IntPtr.Zero;
+
+            return IntPtr.Zero;
         }
     }
 }

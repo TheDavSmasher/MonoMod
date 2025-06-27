@@ -17,9 +17,15 @@ namespace MonoMod.Core.Platforms
         /// This system allows for pages which are protected Read/Write/Execute.
         /// </summary>
         RWXPages = 0x01,
+
         /// <summary>
         /// This system allows for pages which are protected Read/Execute.
         /// </summary>
         RXPages = 0x02,
+
+        /// <summary>
+        /// This system requires the use of native jit hooks.
+        /// </summary>
+        NativeJitHooks = 0x10,
     }
 }

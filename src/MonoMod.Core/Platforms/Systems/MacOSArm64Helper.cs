@@ -23,10 +23,12 @@ namespace MonoMod.Core.Platforms.Systems
         private const string TempFileNameTmpl = "/tmp/mm-macos-silicon-helper.dylib.XXXXXX";
         private const string LogicalName = "helper_macos_arm64.dylib";
         private const string JitMemCpyExport = "mmch_jit_memcpy";
-        
+        private const string JitHookConfigExport = "mmch_jit_hook_config";
+
         private readonly IntPtr _handle;
         private readonly IntPtr _jitMemCpy;
-        
+        private readonly IntPtr _jitHookConfig;
+
         private MacOSArm64Helper(string fileName)
         {
             _handle = DynDll.OpenLibrary(fileName);
@@ -35,6 +37,9 @@ namespace MonoMod.Core.Platforms.Systems
             {
                 _jitMemCpy = DynDll.GetExport(_handle, JitMemCpyExport);
                 Helpers.Assert(_jitMemCpy != IntPtr.Zero);
+
+                _jitHookConfig = DynDll.GetExport(_handle, JitHookConfigExport);
+                Helpers.Assert(_jitHookConfig != IntPtr.Zero);
             }
             catch
             {
@@ -56,6 +61,17 @@ namespace MonoMod.Core.Platforms.Systems
             fnPtr(dst, src, size);
         }
 
+        /// <summary>
+        /// Gets the pointer to the native jit hook configuration struct which can vary by both runtime and arch.
+        /// </summary>
+        /// <param name="runtimeMajMin">Runtime major and minor version.</param>
+        /// <returns>A pointer to the requested jit hook configuration struct.</returns>
+        internal unsafe IntPtr GetJitHookConfig(int runtimeMajMin)
+        {
+            var fnPtr = (delegate* unmanaged[Cdecl]<int, IntPtr>)_jitHookConfig;
+            return fnPtr(runtimeMajMin);
+        }
+
         private static void CreateTempFile(string tmpl, out int fd, out string fileName)
         {
             var tmplName = ArrayPool<byte>.Shared.Rent(tmpl.Length + 1);
@@ -74,7 +90,7 @@ namespace MonoMod.Core.Platforms.Systems
                     {
                         var lastError = OSX.Errno;
                         var ex = new Win32Exception(lastError);
-                        MMDbgLog.Error($"Could not create temp file for NativeExceptionHelper: {lastError} {ex}");
+                        MMDbgLog.Error($"Could not create temp file for {nameof(MacOSArm64Helper)}: {lastError} {ex}");
                         throw ex;
                     }
 
@@ -117,8 +133,7 @@ namespace MonoMod.Core.Platforms.Systems
             
             MMDbgLog.Trace($"{nameof(MacOSArm64Helper)} has been initialized.");
 
-            var fileName = GetTempFileFromEmbeddedResources(LogicalName);
-
+            var fileName = File.Exists(LogicalName) ? LogicalName : GetTempFileFromEmbeddedResources(LogicalName);
             Instance = new MacOSArm64Helper(fileName);
         }
     }

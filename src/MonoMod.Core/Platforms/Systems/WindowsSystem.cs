@@ -313,5 +313,10 @@ namespace MonoMod.Core.Platforms.Systems
 
             ArrayPool<CFG_CALL_TARGET_INFO>.Shared.Return(callTargetInfos);
         }
+
+        public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
