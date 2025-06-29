@@ -42,7 +42,7 @@ namespace MonoMod.Core.Platforms.Systems
                     );
                     break;
                 case ArchitectureKind.Arm64:
-                    Features = SystemFeature.RXPages | SystemFeature.NativeJitHooks;
+                    Features = SystemFeature.RXPages | SystemFeature.MayUseNativeJitHooks;
                     DefaultAbi = new Abi(
                         new[]
                         {
@@ -578,7 +578,13 @@ namespace MonoMod.Core.Platforms.Systems
         public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
         {
             if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
-                return MacOSArm64Helper.Instance?.GetJitHookConfig(runtimeMajMin) ?? IntPtr.Zero;
+            {
+                var hookConfig = MacOSArm64Helper.Instance?.GetJitHookConfig(runtimeMajMin) ?? IntPtr.Zero;
+
+                // Native jit hooks are required on macos arm64!
+                Helpers.Assert(hookConfig != IntPtr.Zero);
+                return hookConfig;
+            }
 
             return IntPtr.Zero;
         }

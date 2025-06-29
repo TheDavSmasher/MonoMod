@@ -84,7 +84,7 @@ namespace MonoMod.Core.Platforms.Runtimes
         private IDisposable? n2mHookHelper;
         private IDisposable? m2nHookHelper;
 
-        protected unsafe override void InstallJitHook(IntPtr jit)
+        protected unsafe override void InstallManagedJitHook(IntPtr jit)
         {
             CheckVersionGuid(jit);
 

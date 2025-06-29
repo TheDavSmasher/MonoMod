@@ -24,8 +24,8 @@ namespace MonoMod.Core.Platforms
         RXPages = 0x02,
 
         /// <summary>
-        /// This system requires the use of native jit hooks.
+        /// This system may make use of native jit hooks.
         /// </summary>
-        NativeJitHooks = 0x10,
+        MayUseNativeJitHooks = 0x10,
     }
 }

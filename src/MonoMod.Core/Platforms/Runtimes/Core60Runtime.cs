@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -71,22 +71,26 @@ namespace MonoMod.Core.Platforms.Runtimes
 
         protected override void InstallJitHook(IntPtr jit)
         {
-            if ((System.Features & SystemFeature.NativeJitHooks) != 0)
-                InstallNativeJitHook(jit);
-            else
-                base.InstallJitHook(jit);
+            // Native jit hooks takes priority if they install successfully
+            if (((System.Features & SystemFeature.MayUseNativeJitHooks) != 0) && InstallNativeJitHook(jit))
+                return;
+            
+            InstallManagedJitHook(jit);
         }
 
         private Delegate? ourCompileMethodHookPost;
 
-        private unsafe void InstallNativeJitHook(IntPtr jit)
+        protected virtual unsafe bool InstallNativeJitHook(IntPtr jit)
         {
+            var hookConfig = GetNativeJitHookConfig();
+            if (hookConfig == null)
+                return false;
+
             CheckVersionGuid(jit);
 
             // Get the real compile method vtable slot
             var compileMethodSlot = GetVTableEntry(jit, VtableIndexICorJitCompilerCompileMethod);
 
-            var hookConfig = GetNativeJitHookConfig();
             var compileHookPost = CastCompileMethodHookPostToRealType(CreateCompileMethodHookPostDelegate());
             ourCompileMethodHookPost = compileHookPost;
 
@@ -109,10 +113,16 @@ namespace MonoMod.Core.Platforms.Runtimes
             System.PatchData(PatchTargetKind.ReadOnly, (IntPtr)compileMethodSlot, ptrData, default);
 
             // now trigger the compilation of something to ensure that any patches deferred to first invoke are performed
-            var dm = new DynamicMethod("CompileMethodPatchPrimer", typeof(void), null, typeof(Core60Runtime), false);
-            var il = dm.GetILGenerator();
-            il.Emit(OpCodes.Ret);
-            dm.Invoke(null, null);
+            CompileMethodPatchPrimer();
+
+            return true;
+        }
+
+        // This seemingly useless method must exist in order to trigger an invocation of the compileMethod hook the first time so it can perform any deferred init work.
+        // TODO: Remove me when the Post hook method's allocMem patching is moved to a Pre or Init hook.
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private static void CompileMethodPatchPrimer()
+        {
         }
 
         protected unsafe override Delegate CreateCompileMethodDelegate(IntPtr compileMethod)

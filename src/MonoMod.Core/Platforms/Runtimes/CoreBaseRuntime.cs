@@ -137,7 +137,9 @@ namespace MonoMod.Core.Platforms.Runtimes
             }
         }
 
-        protected abstract void InstallJitHook(IntPtr jit);
+        protected virtual void InstallJitHook(IntPtr jit) => InstallManagedJitHook(jit);
+
+        protected abstract void InstallManagedJitHook(IntPtr jit);
 
         private INativeExceptionHelper? lazyNativeExceptionHelper;
         protected INativeExceptionHelper? NativeExceptionHelper => lazyNativeExceptionHelper ??= System.NativeExceptionHelper;
