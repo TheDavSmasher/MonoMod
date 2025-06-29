@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -106,6 +107,12 @@ namespace MonoMod.Core.Platforms.Runtimes
             MemoryMarshal.Write(ptrData, ref ourCompileMethodHookPtr);
 
             System.PatchData(PatchTargetKind.ReadOnly, (IntPtr)compileMethodSlot, ptrData, default);
+
+            // now trigger the compilation of something to ensure that any patches deferred to first invoke are performed
+            var dm = new DynamicMethod("CompileMethodPatchPrimer", typeof(void), null, typeof(Core60Runtime), false);
+            var il = dm.GetILGenerator();
+            il.Emit(OpCodes.Ret);
+            dm.Invoke(null, null);
         }
 
         protected unsafe override Delegate CreateCompileMethodDelegate(IntPtr compileMethod)
@@ -354,7 +361,8 @@ namespace MonoMod.Core.Platforms.Runtimes
                 try
                 {
                     // To avoid the performance implications of having both a Pre and Post hook method, we defer the allocMem patching until the first post hook invocation.
-                    // TODO: It may be necessary to force a compileMethod invocation to prime the patching. Alternatively, we could add a Pre hook that is only called once.
+                    // In order to prime this path, we trigger the compilation of a throw away dynamic method in InstallNativeJitHook.
+                    // TODO: Consider moving this to a Pre hook that is either only called once or, ignoring performance, called every time and remove the dynamic method primer.
                     if (!patchedICorJitInfo)
                     {
                         lock (patchedICorJitInfoSyncRoot)

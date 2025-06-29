@@ -4,6 +4,41 @@
 #include <thread>
 #include <pthread.h>
 
+#if !defined(DISABLE_JWP_DETECTION)
+class PthreadJitWriteProtectScope
+{
+public:
+    PthreadJitWriteProtectScope(bool protect)
+    {
+        requested = protect;
+        actual = get_jit_write_protect();
+        if (actual != requested)
+            pthread_jit_write_protect_np(requested);
+    }
+
+    ~PthreadJitWriteProtectScope()
+    {
+        if (actual != requested)
+            pthread_jit_write_protect_np(actual);
+    }
+
+private:
+    // TODO: Consider alternatives such as locating the PAL_JitWriteProtect TLS enabledCount var from libcoreclr
+    bool get_jit_write_protect()
+    {
+        uint64_t v;
+        __asm__ __volatile__(
+            "isb sy\n"
+            "mrs %0, S3_6_c15_c1_5\n"
+            : "=r"(v)::"memory");
+        return (v & 0x0000000000200000ULL) == 0;
+    }
+
+    bool requested;
+    bool actual;
+};
+#endif
+
 // TODO: When adding the next JitHooksXX, consider templating the implementions to share common code.
 namespace JitHooks60
 {
@@ -52,9 +87,6 @@ namespace JitHooks60
     // Tracks hook entrancy and saves/restores errno safely through unwinds
     class CompileMethodHookTracker
     {
-    private:
-        int lastErrNo;
-
     public:
         CompileMethodHookTracker() noexcept
         {
@@ -72,6 +104,9 @@ namespace JitHooks60
         {
             return compileMethod_Entrancy;
         }
+
+    private:
+        int lastErrNo;
     };
 
     static int ICoreJitCompiler_compileMethod_hook(void* pThis, void* comp, void* info, unsigned flags, uint8_t** nativeEntry, uint32_t* nativeSizeOfCode)
@@ -86,11 +121,8 @@ namespace JitHooks60
         {
             try
             {
+#if defined(DISABLE_JWP_DETECTION)
                 // Since the MAP_JIT W^X write protection is thread local, we can use a new thread to invoke the managed post method.
-
-                // TODO: Consider instead running this on the same thread but checking the PAL_JitWriteProtect TLS enabledCount var (tricky to locate)
-                // if (enabledCount > 0) { pthread_jit_write_protect_np(1); .HookPost(...); pthread_jit_write_protect_np(0); }
-
                 struct AllocMemArgs args = allocMem_Args;
                 std::thread hook_post_thread([&]()
                 {
@@ -106,6 +138,10 @@ namespace JitHooks60
                 });
 
                 hook_post_thread.join();
+#else
+                PthreadJitWriteProtectScope jwps(true);
+                res = jitHookConfig.compileMethodHookPost(pThis, comp, info, flags, nativeEntry, nativeSizeOfCode, res, &allocMem_Args);
+#endif
             }
             catch (...)
             {
@@ -138,7 +174,15 @@ extern "C" void* mmch_jit_hook_config(int runtimeMajMin)
 
 extern "C" void mmch_jit_memcpy(void* dst, const void* src, size_t n)
 {
+#if defined(DISABLE_JWP_DETECTION)
     pthread_jit_write_protect_np(0);
+#else
+    PthreadJitWriteProtectScope jwps(false);
+#endif
+
     memcpy(dst, src, n);
+
+#if defined(DISABLE_JWP_DETECTION)
     pthread_jit_write_protect_np(1);
+#endif
 }
