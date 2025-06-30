@@ -1,4 +1,4 @@
-// clang -O3 -dynamiclib helper_macos_arm64.cc -o helper_macos_arm64.dylib -std=c++20 -lc++ -Wall
+// clang -O3 -dynamiclib helper_macos_arm64.cc -o helper_macos_arm64.dylib -std=c++20 -lc++ -Wall -mmacosx-version-min=11
 
 #include <cstdint>
 #include <thread>
@@ -10,10 +10,18 @@ class PthreadJitWriteProtectScope
 public:
     PthreadJitWriteProtectScope(bool protect)
     {
-        requested = protect;
-        actual = get_jit_write_protect();
-        if (actual != requested)
-            pthread_jit_write_protect_np(requested);
+        if (pthread_jit_write_protect_supported_np())
+        {
+            requested = protect;
+            actual = get_jit_write_protect();
+            if (actual != requested)
+                pthread_jit_write_protect_np(requested);
+        }
+        else
+        {
+            requested = protect;
+            actual = protect;
+        }
     }
 
     ~PthreadJitWriteProtectScope()
@@ -175,7 +183,9 @@ extern "C" void* mmch_jit_hook_config(int runtimeMajMin)
 extern "C" void mmch_jit_memcpy(void* dst, const void* src, size_t n)
 {
 #if defined(DISABLE_JWP_DETECTION)
-    pthread_jit_write_protect_np(0);
+    int jwp = pthread_jit_write_protect_supported_np();
+    if (jwp)
+        pthread_jit_write_protect_np(0);
 #else
     PthreadJitWriteProtectScope jwps(false);
 #endif
@@ -183,6 +193,7 @@ extern "C" void mmch_jit_memcpy(void* dst, const void* src, size_t n)
     memcpy(dst, src, n);
 
 #if defined(DISABLE_JWP_DETECTION)
-    pthread_jit_write_protect_np(1);
+    if (jwp)
+        pthread_jit_write_protect_np(1);
 #endif
 }

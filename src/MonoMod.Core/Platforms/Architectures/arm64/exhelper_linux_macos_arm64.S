@@ -1,5 +1,5 @@
 // Linux: clang exhelper_linux_macos_arm64.S -o exhelper_linux_arm64.so    -shared -Wl,-x,--eh-frame-hdr,-z,now,-z,noexecstack,-z,noseparate-code,-z,norelro,--build-id=none -nodefaultlibs -nostdlib -s -fuse-ld=lld
-// MacOS: clang exhelper_linux_macos_arm64.S -o exhelper_macos_arm64.dylib -shared -Wl,-x -mmacosx-version-min=12
+// MacOS: clang exhelper_linux_macos_arm64.S -o exhelper_macos_arm64.dylib -shared -Wl,-x -mmacosx-version-min=11
 
 #include "asm.i"
 
