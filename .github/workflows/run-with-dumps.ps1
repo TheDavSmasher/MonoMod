@@ -35,11 +35,11 @@ elseif ($IsLinux)
     $corePattern = Join-Path $dumpsPath "dump_%e_%p.core";
     Write-Output ($Args -join "`n") | bash -c @"
 set -eo pipefail;
-echo "$corePattern" | sudo tee /proc/sys/kernel/core_pattern;
 ulimit -c unlimited;
 ulimit -t 600; # hard-limit the program to take no more than 10 minutes (nothing we will use this for needs anywhere near that much; any more is a problem)
 set +e;
-xargs "$Exe";
+# because we run our Linux stuff in containers, we can't set the core_pattern. Thus, we'll do the same thing we *must* do on MacOS and use LLDB to generate dumps when crashing
+xargs lldb -b -o "run" -k "process save-core -s full -- '$(Join-Path $dumpsPath 'dump_crash.core')'" -k "kill" -- "$Exe";
 exit `$?;
 "@;
     exit $LastExitCode;
@@ -50,8 +50,6 @@ elseif ($IsMacOS)
     $corePattern = Join-Path $dumpsPath "dump_%N_%P.core";
     Write-Output ($Args -join "`n") | bash -c @"
 set -eo pipefail;
-sudo sysctl kern.coredump=1;
-sysctl "kern.corefile=$corePattern";
 ulimit -c unlimited;
 ulimit -t 600; # hard-limit the program to take no more than 10 minutes (nothing we will use this for needs anywhere near that much; any more is a problem)
 set +e;
