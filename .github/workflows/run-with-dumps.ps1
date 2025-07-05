@@ -39,7 +39,7 @@ ulimit -c unlimited;
 ulimit -t 600; # hard-limit the program to take no more than 10 minutes (nothing we will use this for needs anywhere near that much; any more is a problem)
 set +e;
 # because we run our Linux stuff in containers, we can't set the core_pattern. Thus, we'll do the same thing we *must* do on MacOS and use LLDB to generate dumps when crashing
-xargs lldb -b -o "run" -k "process save-core -s full -- '$(Join-Path $dumpsPath 'dump_crash.core')'" -k "kill" -- "$Exe";
+xargs lldb -b -o "settings set target.disable-aslr false" -o "run" -k "process save-core -s full -- '$(Join-Path $dumpsPath 'dump_crash.core')'" -k "kill" -- "$Exe";
 exit `$?;
 "@;
     exit $LastExitCode;
@@ -54,7 +54,7 @@ ulimit -c unlimited;
 ulimit -t 600; # hard-limit the program to take no more than 10 minutes (nothing we will use this for needs anywhere near that much; any more is a problem)
 set +e;
 # on MacOS, SIGXCPU doesn't coredump by default. Thus, we use LLDB unattended to perform the dump 
-xargs lldb -b -o "run" -k "process save-core -s full -- '$(Join-Path $dumpsPath 'dump_crash.core')'" -k "kill" -- "$Exe";
+xargs lldb -b -o "settings set target.disable-aslr false" -o "run" -k "process save-core -s full -- '$(Join-Path $dumpsPath 'dump_crash.core')'" -k "kill" -- "$Exe";
 exit `$?;
 "@;
     exit $LastExitCode;
