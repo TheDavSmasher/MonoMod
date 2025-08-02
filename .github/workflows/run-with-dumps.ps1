@@ -21,6 +21,7 @@ if ($null -eq $dumpsPath)
 
 # make sure the dir exists
 New-Item -Type Directory $dumpsPath -Force | Out-Null;
+$lldbHelpers = Join-Path $workspace '.github' 'lldb';
 
 if ($IsWindows)
 {
@@ -38,7 +39,6 @@ if ($IsWindows)
 elseif ($IsLinux)
 {
     # on Linux, we need to set the core_pattern and run the app with a ulimit -c unlimited
-    $lldbHelpers = Join-Path $workspace '.github' 'lldb';
     Write-Output ($Args -join "`n") | bash -c @"
 set -eo pipefail;
 ulimit -c unlimited;
