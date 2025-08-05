@@ -83,4 +83,8 @@
 
   <Import Project="$(MMImportAfterProps)" Condition="'$(MMImportAfterProps)' != '' and Exists('$(MMImportAfterProps)')" />
 
+  <PropertyGroup>
+    <BeforeMicrosoftNETSdkTargets>$(MMToolsPath)NuGet.BeforeVersionSetup.targets</BeforeMicrosoftNETSdkTargets>
+  </PropertyGroup>
+
 </Project>

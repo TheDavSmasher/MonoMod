@@ -1,7 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?> 
 <Project>
-
-  <Import Project="$(MSBuildProjectDirectory)/Version.props" Condition="'$(IsPackable)' != 'false'" />
   
   <PropertyGroup>
     <!-- Allow easily changing the prefix of the package names -->
