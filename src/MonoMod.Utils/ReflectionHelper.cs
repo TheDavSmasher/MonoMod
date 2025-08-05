@@ -103,7 +103,7 @@ namespace MonoMod.Utils
             return null;
         }
 
-        public static bool HashIs(this AssemblyNameReference asmRef, Assembly asm, bool truewhennohash = true)
+        public static bool HashIs(this AssemblyNameReference asmRef, Assembly asm, bool defaultIfNoHash = true)
         {
             Helpers.ThrowIfArgumentNull(asmRef);
             Helpers.ThrowIfArgumentNull(asm);
@@ -120,7 +120,7 @@ namespace MonoMod.Utils
                         return false;
                 return true;
             }
-            return truewhennohash;
+            return defaultIfNoHash;
             // Mono.Cecil ignores the hash for the most part, allowing us to store whatever we want in it.
         }
 
