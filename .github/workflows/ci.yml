@@ -94,7 +94,7 @@ jobs:
     if: needs.setup.outputs.should_skip != 'true'
     strategy:
       matrix:
-        os: [windows-latest, macos-13]
+        os: [windows-latest, macos-latest]
         include:
         - os: windows-latest
           name: Windows
