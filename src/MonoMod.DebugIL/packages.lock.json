@@ -117,7 +117,6 @@
         }
       }
     },
-    ".NETFramework,Version=v4.5.2/win-x86": {},
     "net6.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -213,7 +212,6 @@
           "MonoMod.ILHelpers": "[1.1.0, )"
         }
       }
-    },
-    "net6.0/win-x86": {}
+    }
   }
 }

@@ -102,7 +102,6 @@
         }
       }
     },
-    ".NETFramework,Version=v3.5/win-x86": {},
     ".NETFramework,Version=v4.5.2": {
       "IsExternalInit": {
         "type": "Direct",
@@ -210,7 +209,6 @@
         }
       }
     },
-    ".NETFramework,Version=v4.5.2/win-x86": {},
     ".NETStandard,Version=v2.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -331,7 +329,6 @@
         }
       }
     },
-    ".NETStandard,Version=v2.0/win-x86": {},
     ".NETCoreApp,Version=v5.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -419,7 +416,6 @@
         }
       }
     },
-    ".NETCoreApp,Version=v5.0/win-x86": {},
     "net6.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -507,7 +503,6 @@
         }
       }
     },
-    "net6.0/win-x86": {},
     "net7.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -595,7 +590,6 @@
         }
       }
     },
-    "net7.0/win-x86": {},
     "net8.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -683,7 +677,6 @@
         }
       }
     },
-    "net8.0/win-x86": {},
     "net9.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -770,7 +763,6 @@
           "MonoMod.ILHelpers": "[1.1.0, )"
         }
       }
-    },
-    "net9.0/win-x86": {}
+    }
   }
 }

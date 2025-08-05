@@ -88,7 +88,7 @@
         "resolved": "4.7.0",
         "contentHash": "a4OLB4IITxAXJeV74MDx49Oq2+PsF6Sml54XAFv+2RyWwtDBcabzoxiiJRhdhx+gaohLh4hEGCLQyBozXoQPqA=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -131,7 +131,6 @@
         }
       }
     },
-    ".NETCoreApp,Version=v3.1/win-x86": {},
     ".NETFramework,Version=v3.5": {
       "IsExternalInit": {
         "type": "Direct",
@@ -223,7 +222,7 @@
         "resolved": "0.10.4",
         "contentHash": "BHukPf7zfXu+akTcFEAWvU4x3hVMMIDC+ihGAl/+8OozrY0f/ajrpuaSUf2Q3Xvgsge5NryvOkjtyhV5TNXoSg=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -258,7 +257,6 @@
         }
       }
     },
-    ".NETFramework,Version=v3.5/win-x86": {},
     ".NETFramework,Version=v4.5.2": {
       "IsExternalInit": {
         "type": "Direct",
@@ -356,7 +354,7 @@
         "resolved": "4.5.0",
         "contentHash": "okurQJO6NRE/apDIP23ajJ0hpiNmJ+f0BwOlB/cSqTLQlw5upkf+5+96+iG2Jw40G1fCVCyPz/FhIABUjMR+RQ=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -391,7 +389,6 @@
         }
       }
     },
-    ".NETFramework,Version=v4.5.2/win-x86": {},
     ".NETStandard,Version=v2.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -500,7 +497,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -543,7 +540,6 @@
         }
       }
     },
-    ".NETStandard,Version=v2.0/win-x86": {},
     ".NETCoreApp,Version=v5.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -621,7 +617,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -656,7 +652,6 @@
         }
       }
     },
-    ".NETCoreApp,Version=v5.0/win-x86": {},
     "net6.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -734,7 +729,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -769,7 +764,6 @@
         }
       }
     },
-    "net6.0/win-x86": {},
     "net7.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -847,7 +841,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -882,7 +876,6 @@
         }
       }
     },
-    "net7.0/win-x86": {},
     "net8.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -960,7 +953,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -995,7 +988,6 @@
         }
       }
     },
-    "net8.0/win-x86": {},
     "net9.0": {
       "IsExternalInit": {
         "type": "Direct",
@@ -1073,7 +1065,7 @@
         "resolved": "0.11.5",
         "contentHash": "fxfX+0JGTZ8YQeu1MYjbBiK2CYTSzDyEeIixt+yqKKTn7FW8rv7JMY70qevup4ZJfD7Kk/VG/jDzQQTpfch87g=="
       },
-      "iced": {
+      "Iced": {
         "type": "Project",
         "dependencies": {
           "MonoMod.Backports": "[1.1.2, )",
@@ -1107,7 +1099,6 @@
           "MonoMod.ILHelpers": "[1.1.0, )"
         }
       }
-    },
-    "net9.0/win-x86": {}
+    }
   }
 }
