@@ -145,7 +145,7 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
       
   upload-github:
-    needs: [setup, build-testassets, test]
+    needs: [setup, build-testassets]
     if: 'always() && !inputs.dryrun' # always try to push GitHub packages, even if tests fail
     name: Upload Packages (GitHub)
     uses: ./.github/workflows/upload-packages.yml
@@ -174,6 +174,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        lfs: true
+        submodules: true
         
     - name: Cache restored NuGet packages
       uses: actions/cache@v4
