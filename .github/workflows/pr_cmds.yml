@@ -1,0 +1,117 @@
+name: Command Response
+
+on:
+  issue_comment:
+    types: [created]
+       
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  DOTNET_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  NUGET_PACKAGES: ${{github.workspace}}/artifacts/pkg
+  RestoreLockedMode: true
+  
+jobs:
+  eval:
+    name: Check for commands on PRs
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request }}
+
+    permissions:
+      pull-requests: write
+      issues: write
+      checks: read
+      
+    steps:
+    - name: Check command '/version'
+      uses: github/command@v4
+      id: cmdversion
+      with:
+        command: /version
+        param_separator: ' '
+        permissions: 'write,admin'
+        allow_drafts: true
+        allow_forks: true
+        skip_ci: true
+        skip_reviews: true
+        skip_completing: true
+
+    - name: Check command '/lockfile'
+      uses: github/command@v4
+      id: cmdlockfile
+      with:
+        command: /lockfile
+        param_separator: ' '
+        permissions: 'write,admin'
+        allow_drafts: true
+        allow_forks: true
+        skip_ci: true
+        skip_reviews: true
+        skip_completing: true
+        
+    - uses: actions/github-script@v3
+      id: get-pr
+      if: steps.cmdversion.outputs.continue == 'true' || steps.cmdlockfile.outputs.continue == 'true'
+      with:
+        script: |
+          const request = {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          }
+          core.info(`Getting PR #${request.pull_number} from ${request.owner}/${request.repo}`)
+          try {
+            const result = await github.pulls.get(request)
+            return result.data
+          } catch (err) {
+            core.setFailed(`Request failed with error ${err}`)
+          }
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      if: steps.cmdversion.outputs.continue == 'true' || steps.cmdlockfile.outputs.continue == 'true'
+      with:
+        repository: ${{ fromJSON(steps.get-pr.outputs.result).head.repo.full_name }}
+        ref: ${{ fromJSON(steps.get-pr.outputs.result).head.ref }} # or .head.ref for branch name
+        lfs: true
+        submodules: true
+        
+    - name: Cache restored NuGet packages
+      uses: actions/cache@v4
+      if: steps.cmdversion.outputs.continue == 'true' || steps.cmdlockfile.outputs.continue == 'true'
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: ${{ runner.os }}-nuget-v2-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: ${{ runner.os }}-nuget-setup-v2-${{ hashFiles('build/gen-test-matrix/packages.lock.json') }}
+    
+    - name: Install .NET SDK
+      if: steps.cmdversion.outputs.continue == 'true' || steps.cmdlockfile.outputs.continue == 'true'
+      uses: nike4613/install-dotnet@533307d1c90c37993c8ef1397388bc9783e7b87c
+      with:
+        global-json: global.json
+
+    # now, invoke the script with the correct parameters
+    - name: Evaluate commands
+      id: eval
+      shell: pwsh
+      run: |
+        if ('${{ steps.cmdversion.outputs.continue }}' -eq 'true')
+        {
+          ./.github/workflows/pr_cmds.ps1 -CmdVersion ${{ steps.cmdversion.outputs.params }}
+        }
+        elseif ('${{ steps.cmdlockfile.outputs.continue }}' -eq 'true')
+        {
+          ./.github/workflows/pr_cmds.ps1 -CmdLockfile ${{ steps.cmdlockfile.outputs.params }}
+        }
+        
+    - name: Commit results
+      if: ${{ steps.eval.outputs.commit == 'true' }}
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: ${{ steps.eval.outputs.message }}
+        default_author: github_actor
+        push: true
+        pathspec_error_handling: exitAtEnd
