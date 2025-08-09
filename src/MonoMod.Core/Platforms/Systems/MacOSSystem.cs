@@ -53,7 +53,6 @@ namespace MonoMod.Core.Platforms.Systems
                         SystemVABI.ClassifyARM64,
                         false
                     );
-                    MacOSArm64Helper.Initialize();
                     break;
                 default:
                     throw new NotImplementedException();
@@ -169,14 +168,13 @@ namespace MonoMod.Core.Platforms.Systems
             var target = new Span<byte>((void*)patchTarget, data.Length);
             _ = target.TryCopyTo(backup);
             
-            if (PlatformDetection.Architecture == ArchitectureKind.Arm64 && curProt == vm_prot_t.All)
+            if (NativeExceptionHelper is JitMemcpyHelper gcmh && curProt == vm_prot_t.All)
             {
-                Helpers.Assert(MacOSArm64Helper.Instance is not null);
                 MMDbgLog.Trace($"RWX memory detected, doing memcpy for MAP_JIT");
                 
                 fixed (byte* dataPtr = data)
                 {
-                    MacOSArm64Helper.Instance.JitMemCpy(patchTarget, (IntPtr)dataPtr, (ulong)data.Length);
+                    gcmh.JitMemCpy(patchTarget, (IntPtr)dataPtr, (ulong)data.Length);
                     MMDbgLog.Trace($"{data.Length} bytes written to 0x{patchTarget:X16}");
                 }
             }
@@ -523,6 +521,16 @@ namespace MonoMod.Core.Platforms.Systems
         private PosixExceptionHelper? lazyNativeExceptionHelper;
         public INativeExceptionHelper? NativeExceptionHelper => lazyNativeExceptionHelper ??= CreateNativeExceptionHelper();
 
+        public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
+        {
+            if (NativeExceptionHelper is JitMemcpyHelper gcmh)
+            {
+                return gcmh.GetJitHookConfig(runtimeMajMin);
+            }
+
+            return IntPtr.Zero;
+        }
+
         private static ReadOnlySpan<byte> NEHTempl => "/tmp/mm-exhelper.dylib.XXXXXX"u8;
 
         private unsafe PosixExceptionHelper CreateNativeExceptionHelper()
@@ -572,15 +580,75 @@ namespace MonoMod.Core.Platforms.Systems
 
                 embedded.CopyTo(fs);
             }
-            return PosixExceptionHelper.CreateHelper(arch, fname);
+            return arch.Target is ArchitectureKind.Arm64
+                ? JitMemcpyHelper.CreateHelper(arch, fname)
+                : PosixExceptionHelper.CreateHelper(arch, fname);
         }
 
-        public unsafe IntPtr GetNativeJitHookConfig(int runtimeMajMin)
+        private sealed class JitMemcpyHelper : PosixExceptionHelper
         {
-            if (PlatformDetection.Architecture == ArchitectureKind.Arm64)
-                return MacOSArm64Helper.Instance?.GetJitHookConfig(runtimeMajMin) ?? IntPtr.Zero;
-            
-            return IntPtr.Zero;
+            private readonly IntPtr mmch_jit_memcpy;
+            private readonly IntPtr mmch_jit_hook_config;
+
+            private JitMemcpyHelper(IArchitecture arch, IntPtr getExPtr, IntPtr m2n, IntPtr n2m, IntPtr memcpy, IntPtr jitCfg)
+                : base(arch, getExPtr, m2n, n2m)
+            {
+                mmch_jit_memcpy = memcpy;
+                mmch_jit_hook_config = jitCfg;
+            }
+
+            public static new JitMemcpyHelper CreateHelper(IArchitecture arch, string filename)
+            {
+                // we've now got the file on disk, and we know its name. lets load it
+                var handle = DynDll.OpenLibrary(filename);
+                IntPtr eh_get_exception_ptr, eh_managed_to_native, eh_native_to_managed, mmch_jit_memcpy, mmch_jit_hook_config;
+                try
+                {
+                    eh_get_exception_ptr = DynDll.GetExport(handle, nameof(eh_get_exception_ptr));
+                    eh_managed_to_native = DynDll.GetExport(handle, nameof(eh_managed_to_native));
+                    eh_native_to_managed = DynDll.GetExport(handle, nameof(eh_native_to_managed));
+                    mmch_jit_memcpy = DynDll.GetExport(handle, nameof(mmch_jit_memcpy));
+                    mmch_jit_hook_config = DynDll.GetExport(handle, nameof(mmch_jit_hook_config));
+
+                    Helpers.Assert(eh_get_exception_ptr != IntPtr.Zero);
+                    Helpers.Assert(eh_managed_to_native != IntPtr.Zero);
+                    Helpers.Assert(eh_native_to_managed != IntPtr.Zero);
+                    Helpers.Assert(eh_native_to_managed != IntPtr.Zero);
+                    Helpers.Assert(mmch_jit_memcpy != IntPtr.Zero);
+                    Helpers.Assert(mmch_jit_hook_config != IntPtr.Zero);
+                }
+                catch
+                {
+                    DynDll.CloseLibrary(handle);
+                    throw;
+                }
+
+                return new JitMemcpyHelper(arch, eh_get_exception_ptr, eh_managed_to_native, eh_native_to_managed, mmch_jit_memcpy, mmch_jit_hook_config);
+            }
+
+            /// <summary>
+            /// JIT_MAP (RWX) safe memory copy
+            /// </summary>
+            /// <param name="dst">Destination</param>
+            /// <param name="src">Source</param>
+            /// <param name="size">Size of memory that should be copied from dst to src</param>
+            public unsafe void JitMemCpy(IntPtr dst, IntPtr src, ulong size)
+            {
+                // TODO: this might be a problem on Mono, not sure yet
+                var fnPtr = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, ulong, void>)mmch_jit_memcpy;
+                fnPtr(dst, src, size);
+            }
+
+            /// <summary>
+            /// Gets the pointer to the native jit hook configuration struct which can vary by both runtime and arch.
+            /// </summary>
+            /// <param name="runtimeMajMin">Runtime major and minor version.</param>
+            /// <returns>A pointer to the requested jit hook configuration struct.</returns>
+            internal unsafe IntPtr GetJitHookConfig(int runtimeMajMin)
+            {
+                var fnPtr = (delegate* unmanaged[Cdecl]<int, IntPtr>)mmch_jit_hook_config;
+                return fnPtr(runtimeMajMin);
+            }
         }
     }
 }
