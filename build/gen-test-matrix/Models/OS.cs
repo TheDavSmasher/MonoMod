@@ -78,6 +78,36 @@ internal sealed record OS : Enableable
         },
         new()
         {
+            Name = "Linux ARM64",
+            Runner = "ubuntu-24.04-arm",
+            UseContainer = true,
+            HasSystemMono = true,
+            RidName = "linux",
+            UnityDllName = "monobdwgc-2.0", // TODO: is this correct?
+            DllPrefix = "lib",
+            DllSuffix = ".so",
+
+            Arch = [
+                new() { RidName = "arm64", UnityName = null, IsRunnerArch = true },
+            ]
+        },
+        new()
+        {
+            Name = "Linux musl ARM64",
+            Runner = "ubuntu-24.04-arm",
+            UseContainer = true,
+            HasSystemMono = true,
+            RidName = "linux-musl",
+            UnityDllName = "monobdwgc-2.0", // TODO: is this correct?
+            DllPrefix = "lib",
+            DllSuffix = ".so",
+
+            Arch = [
+                new() { RidName = "arm64", UnityName = null, IsRunnerArch = true },
+            ]
+        },
+        new()
+        {
             Name = "MacOS 13",
             Runner = "macos-13",
             HasSystemMono = true,
