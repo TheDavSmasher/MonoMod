@@ -31,6 +31,7 @@ internal abstract class PosixNativeLibraryDrop
     /// <returns>The full final path of the dropped binary.</returns>
     public unsafe string DropLibrary(Stream sourceStream, ReadOnlySpan<byte> defaultTemplate)
     {
+        int templateLength;
         byte[] templ;
         if (Switches.TryGetSwitchValue(Switches.HelperDropPath, out var value) && value is string dropPath)
         {
@@ -62,16 +63,18 @@ internal abstract class PosixNativeLibraryDrop
             templateBasename.CopyTo(templ.AsSpan(pos));
             // and just for good measure, null terminate
             templ[pos + templateBasename.Length] = 0;
+            templateLength = pos + templateBasename.Length;
         }
         else
         {
             templ = ArrayPool<byte>.Shared.Rent(defaultTemplate.Length + 1);
             templ.AsSpan().Clear();
             defaultTemplate.CopyTo(templ);
+            templateLength = defaultTemplate.Length;
         }
 
         var fd = Mkstemp(templ);
-        var fname = Encoding.UTF8.GetString(templ, 0, defaultTemplate.Length);
+        var fname = Encoding.UTF8.GetString(templ, 0, templateLength);
 
         ArrayPool<byte>.Shared.Return(templ);
 
