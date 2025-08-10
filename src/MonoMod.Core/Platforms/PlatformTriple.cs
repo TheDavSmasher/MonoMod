@@ -761,7 +761,8 @@ namespace MonoMod.Core.Platforms
             }
 
             Helpers.DAssert(thisPos >= 0 || !hasThis);
-            Helpers.DAssert(returnBufferPos >= 0 || !hasReturnBuffer);
+            // note: ARM64 (sysv) uses a dedicated register for the return buffer, so we don't record it as an argument
+            Helpers.DAssert(!Abi.ReturnsReturnBuffer || !hasReturnBuffer || returnBufferPos >= 0);
             Helpers.DAssert(userArgumentsOffset >= 0);
 
             using var dmd = new DynamicMethodDefinition(
@@ -775,7 +776,7 @@ namespace MonoMod.Core.Platforms
             var il = dmd.GetILProcessor();
 
             // load return buffer
-            if (hasReturnBuffer)
+            if (hasReturnBuffer && returnBufferPos >= 0)
                 il.Emit(OpCodes.Ldarg, returnBufferPos);
 
             // load thisptr
@@ -790,7 +791,7 @@ namespace MonoMod.Core.Platforms
             il.Emit(OpCodes.Call, il.Body.Method.Module.ImportReference(to));
 
             // store the returned object
-            if (hasReturnBuffer)
+            if (hasReturnBuffer && returnBufferPos >= 0)
                 il.Emit(OpCodes.Stobj, il.Body.Method.Module.ImportReference(returnType));
 
             // if we need to return the pointer, do that

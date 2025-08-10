@@ -47,7 +47,12 @@ namespace MonoMod.Core.Platforms.Systems
                     break;
                 case ArchitectureKind.Arm64:
                     defaultAbi = new Abi(
-                        new[] { SpecialArgumentKind.ReturnBuffer, SpecialArgumentKind.ThisPointer, SpecialArgumentKind.UserArguments },
+                        new[]
+                        {
+                            //SpecialArgumentKind.ReturnBuffer, // ARM64 passes the return buffer in a dedicated register
+                            SpecialArgumentKind.ThisPointer,
+                            SpecialArgumentKind.UserArguments
+                        },
                         SystemVABI.ClassifyARM64,
                         false
                     );

@@ -42,7 +42,7 @@ namespace MonoMod.Core.Platforms.Systems
                     DefaultAbi = new Abi(
                         new[]
                         {
-                            SpecialArgumentKind.ReturnBuffer,
+                            //SpecialArgumentKind.ReturnBuffer, // Arm64 uses a dedicated register for return buffers
                             SpecialArgumentKind.ThisPointer,
                             SpecialArgumentKind.UserArguments
                         },
