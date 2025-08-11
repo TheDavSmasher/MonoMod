@@ -61,7 +61,7 @@ namespace MonoMod.Core.Utils
         /// </summary>
         /// <param name="kind">The <see cref="AddressKind"/>.</param>
         /// <param name="relativeOffset">The offset relative to the match start.</param>
-        /// <param name="constantValue">The constant value of the address if kind is <see cref="AddressKind.Constant"/>.</param>
+        /// <param name="constantValue">The constant value of the address if kind is <see cref="AddressKind.ConstantAddr"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="kind"/> is invalid
         /// -OR- <paramref name="kind"/> is absolute
         /// -OR- <paramref name="relativeOffset"/> is less than zero.</exception>

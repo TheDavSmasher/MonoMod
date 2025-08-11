@@ -55,7 +55,7 @@ namespace MonoMod.Core.Utils
         /// A constant address. This must be combined with one of the other address kinds. The address value is always
         /// a constant.
         /// </summary>
-        Constant = 0b10000,
+        ConstantAddr = 0b10000,
     }
 
     /// <summary>

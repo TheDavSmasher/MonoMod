@@ -199,7 +199,7 @@ namespace MonoMod.Core.Platforms.Architectures
                     //
                     // FixupPrecodeCode
                     new BytePattern(
-                        new AddressMeaning(AddressKind.Rel64 | AddressKind.Constant | AddressKind.Indirect, 0, 0x4000), mustMatchAtStart: true,
+                        new AddressMeaning(AddressKind.Rel64 | AddressKind.ConstantAddr | AddressKind.Indirect, 0, 0x4000), mustMatchAtStart: true,
                         new byte[]
                         {
                             0xff, 0xff, 0xff, 0xff,
@@ -212,14 +212,14 @@ namespace MonoMod.Core.Platforms.Architectures
                         {
                             0x0b, 0x00, 0x02, 0x58, // ldr x11, DATA_SLOT(FixupPrecode, Target)
                             0x60, 0x01, 0x1f, 0xd6, // br x11
-                            0x0c, 0x00, 0x02, 0x58, // ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
+                            0x0c, 0x00, 0x02, 0x58, // ldr x12, DATA_SLOT(FixupPrecode, MethodDesc
                             0x2b, 0x00, 0x02, 0x58, // ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
                             0x60, 0x01, 0x1f, 0xd6, // br x11
                         }
                     ),
                     // FixupPrecodeCode ThePreStub entry point
                     new BytePattern(
-                        new AddressMeaning(AddressKind.PrecodeFixupThunkRel64 | AddressKind.Constant | AddressKind.Indirect, 0, 0x4008), mustMatchAtStart: true,
+                        new AddressMeaning(AddressKind.PrecodeFixupThunkRel64 | AddressKind.ConstantAddr | AddressKind.Indirect, 0, 0x4008), mustMatchAtStart: true,
                         new byte[]
                         {
                             0xff, 0xff, 0xff, 0xff,
@@ -235,7 +235,7 @@ namespace MonoMod.Core.Platforms.Architectures
                     ),
                     // CallCountingStubCode
                     new BytePattern(
-                        new AddressMeaning(AddressKind.Rel64 | AddressKind.Constant | AddressKind.Indirect, 0, 0x4008), mustMatchAtStart: true,
+                        new AddressMeaning(AddressKind.Rel64 | AddressKind.ConstantAddr | AddressKind.Indirect, 0, 0x4008), mustMatchAtStart: true,
                         new byte[]
                         {
                             0xff, 0xff, 0xff, 0xff,
