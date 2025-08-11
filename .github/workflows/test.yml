@@ -44,6 +44,7 @@ jobs:
     steps:
     - name: Install coreutils
       uses: tecolicom/actions-use-homebrew-tools@v1 # we use this action instead of just a brew install so that the downloaded package gets cached
+      if: ${{ runner.os == 'macOS' }}
       with:
         key: ${{ fromJSON(inputs.matrix).os.runner }}-brew-coreutils
         tools: coreutils
