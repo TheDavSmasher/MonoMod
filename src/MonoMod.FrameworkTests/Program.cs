@@ -6,7 +6,6 @@ using System.Diagnostics;
 using MonoMod.Utils;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using MonoMod.Core.Platforms;
 
 #if NETCOREAPP1_0_OR_GREATER
 //using Xunit.Abstractions;
