@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      skipped_by: ${{ steps.skip_check.outputs.skipped_by }}
       ver: ${{ steps.computever.outputs.ver }}
       matrix: ${{ steps.compute-matrix.outputs.matrix }}
     steps:
@@ -166,7 +167,7 @@ jobs:
       
   upload:
     needs: [setup, build-testassets]
-    if: github.ref_name == 'reorganize'
+    if: ${{ github.ref_name == 'reorganize' && (success() || needs.setup.result == 'success') }}
     name: Upload Packages
     uses: ./.github/workflows/upload-packages.yml
     with:
