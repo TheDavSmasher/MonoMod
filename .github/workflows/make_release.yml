@@ -160,7 +160,8 @@ jobs:
 
   bump-ver:
     name: Bump versions
-    needs: [setup, build-testassets]
+    needs: [setup, build-testassets, test, upload-nuget]
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
 
     permissions:
